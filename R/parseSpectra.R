@@ -1,4 +1,4 @@
-
+rm(list=ls())
 # import spectral data -----------------------------------------
 source("R/setup.R")
 source("R/utils.R")
@@ -56,23 +56,13 @@ DATA <- DATA[,.(R=mean(R)),by=.(SampleID,SourceID,WL)]
 
 
 # IDX <- unique(DATA$SampleID) |> sample(size=100)
-# AUX <- DATA[SampleID %in% IDX,.(
-#   WL,R,
-#   Re=get_emd_envelope(x=.SD$WL,y=.SD$R),
-#   Rn=get_convex_envelope(x=.SD$WL,y=.SD$R,type="upper")
-# ),by=.(SampleID,SourceID)] 
 
-AUX <- DATA[,.(
+SML <- DATA[,.(
   WL,R,
-  Re=get_emd_envelope(x=.SD$WL,y=.SD$R),
+  Rm=get_emd_envelope(x=.SD$WL,y=.SD$R),
   Rn=get_convex_envelope(x=.SD$WL,y=.SD$R,type="upper")
 ),by=.(SampleID,SourceID)]
-
-
-
-# DT1 <- DATA[,.(WL,R,Ue=get_convex_envelope(x=WL,y=R,type="upper"),Re=get_emd_envelope(x=WL,y=R)),by=.(SampleID,SourceID)] #|> na.omit()
-# Build Long data.table
-
+SML[is.na(Rm),Rm:=0,by=.(SampleID,SourceID)]
 fwrite(SML, "data/SML.csv")
 rm(DATA)
 

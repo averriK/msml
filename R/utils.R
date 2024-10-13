@@ -58,13 +58,46 @@ get_convex_envelope <- function(x, y, type="upper") {
   DTE <- DTE[, .(y = mean(y)), by = x]  # Average y for duplicate x values
   
   # Interpolate to get the envelope for the full range of x-values
-  Ye <- approx(DTE$x, DTE$y, xout = x)$y
+  Ye <- approx(DTE$x, DTE$y, xout = x)$y-y
   
   
   return(Ye)
 }
 
-getPeaks <- function(x,nema=12,ndiff=20,npeaks=10 ){
+get_peaks <- function(x,nema=12,ndiff=20,npeaks=10,threshold=0.025,smooth=FALSE ){
+  
+  
+  if(smooth){
+    x <- (TTR::EMA(x, n=nema)+rev(TTR::EMA(rev(x), n=nema)))/2
+  }
+  
+  PM <- pracma::findpeaks( x/max(x),threshold=threshold) 
+  if(!is.null(PM)){
+    RANK <- data.table(A=PM[,1]*max(x),i=PM[,2])
+  } else {
+    RANK <- data.table()
+  }
+  
+  i <- which(diff(sign(diff(x))) == -2) + 1
+  RANK <- rbind(RANK,data.table(A=x[i],i=i))
+  
+  
+  RANK <- unique(RANK,by="x")
+  RANK <- RANK[order(x),]
+  # Step 2: Create groups based on the condition that x differences are less than 10
+  RANK[, G := cumsum(c(TRUE, diff(x) > ndiff))]
+  # Step 3: For each group, select the row with the maximum absorption (A)
+  RANK <- RANK[, .SD[which.max(A)], by = G]
+  RANK <- RANK[order(-A),]
+  
+  # Step 4: Drop the "group" column, if not needed
+  DT <- RANK[,.(A,x)] |> head(npeaks) |> na.omit()
+  
+  
+  return(DT)
+}
+
+getPeaks.OLD <- function(x,nema=12,ndiff=20,npeaks=10 ){
   # 
   WL <- x$WL
   R <- x$R
@@ -103,7 +136,7 @@ get_emd_envelope <- function(x,y,method="emd",noise.amp = .5e-7){
     return(NULL)
   }
   
-  DTE <- IMF[!(IMF %in% c("signal","IMF1")),.(y=sum(s)),by=.(x=t)]
+  DTE <- IMF[!(IMF %in% c("signal","IMF1","residue")),.(y=sum(s)),by=.(x=t)]
   Ye <- approx(DTE$x, DTE$y, xout = x)$y
   
   return(Ye)
