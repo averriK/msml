@@ -54,13 +54,20 @@ DATA$SampleID |> unique() |> length() |> sprintf(fmt="There are %d unique Sample
 # Remove (Aggregate) possible duplicates from different ProjectIDs
 DATA <- DATA[,.(R=mean(R)),by=.(SampleID,SourceID,WL)]
 
-# Get Upper Envelope
-DTe <- DATA[,get_emd_envelope(x=.SD$WL,y=.SD$R),by=.(SampleID,SourceID)] 
-fwrite(DTe,"data/DTe.csv")
 
-DTn <- DATA[,get_convex_envelope(x=.SD$WL,y=.SD$R,type="upper"),by=.(SampleID,SourceID)] 
+# IDX <- unique(DATA$SampleID) |> sample(size=100)
+# AUX <- DATA[SampleID %in% IDX,.(
+#   WL,R,
+#   Re=get_emd_envelope(x=.SD$WL,y=.SD$R),
+#   Rn=get_convex_envelope(x=.SD$WL,y=.SD$R,type="upper")
+# ),by=.(SampleID,SourceID)] 
 
-fwrite(DTn,"data/DTn.csv")
+AUX <- DATA[,.(
+  WL,R,
+  Re=get_emd_envelope(x=.SD$WL,y=.SD$R),
+  Rn=get_convex_envelope(x=.SD$WL,y=.SD$R,type="upper")
+),by=.(SampleID,SourceID)]
+
 
 
 # DT1 <- DATA[,.(WL,R,Ue=get_convex_envelope(x=WL,y=R,type="upper"),Re=get_emd_envelope(x=WL,y=R)),by=.(SampleID,SourceID)] #|> na.omit()

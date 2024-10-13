@@ -61,7 +61,7 @@ get_convex_envelope <- function(x, y, type="upper") {
   Ye <- approx(DTE$x, DTE$y, xout = x)$y
   
   
-  return(data.table(t=x,s=Ye))
+  return(Ye)
 }
 
 getPeaks <- function(x,nema=12,ndiff=20,npeaks=10 ){
@@ -99,14 +99,14 @@ getPeaks <- function(x,nema=12,ndiff=20,npeaks=10 ){
 get_emd_envelope <- function(x,y,method="emd",noise.amp = .5e-7){
   # browser()
   IMF <- gmsp::get_imf(s=y,ts=x,method=method,noise.amp = noise.amp)
-  if(is.null(IMF)){
+  if(is.null(IMF) || nrow(IMF)==0 ||ncol(IMF)==0){
     return(NULL)
   }
   
   DTE <- IMF[!(IMF %in% c("signal","IMF1")),.(y=sum(s)),by=.(x=t)]
   Ye <- approx(DTE$x, DTE$y, xout = x)$y
   
-  return(data.table(t=x,s=Ye))
+  return(Ye)
 }
 
 
