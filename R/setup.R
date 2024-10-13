@@ -1,0 +1,17 @@
+library(data.table)
+library(readxl)
+library(reticulate)
+use_python("/Users/averri/environments/venv3.11/bin/python", required = TRUE)
+
+library(stringdist)
+library(caret) |> suppressPackageStartupMessages()
+library(caretEnsemble)
+library(xgboost)
+library(RColorBrewer)
+library(doParallel)
+library(buildPlot)
+library(highcharter)
+
+library(seewave)
+library(TTR)
+library(pracma)
