@@ -60,8 +60,10 @@ DATA <- DATA[WL>=1000,.(R=mean(R)),by=.(SampleID,SourceID,WL)]
 SML <- DATA[,.(
   WL,R,
   Rm=get_emd_envelope(x=.SD$WL,y=.SD$R),
-  Rn=get_convex_envelope(x=.SD$WL,y=.SD$R,type="upper")
+  Ue=get_convex_envelope(x=.SD$WL,y=.SD$R,type="upper")
 ),by=.(SampleID,SourceID)]
+
+SML[,Rn:=Ue-R,by=.(SampleID,SourceID)]
 # SML[is.na(Rm),Rm:=0,by=.(SampleID,SourceID)]
 fwrite(SML, "data/SML.csv")
 rm(DATA)

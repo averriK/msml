@@ -2,19 +2,6 @@ source("R/setup.R")
 source("R/utils.R")
 # Get Spectral data
 SML <- fread("data/SML.csv")
-SourceID_Target <- c("dsp","fos") # We cannot MIX asd/sco together with dsp/fos.
-WLmin <- 0# 750
-WLmax <- Inf# 2350
-Nema <- 10
-
-# issues with:
-# SID <- "LKS086" 
-# SID <- "372652" 
-# SID <- "83J0418"
-# SID <-  "149C097A"
-# SID <- "398148"
-# SID <- "350673"
-# SID <- "GOL077"
 
 IDX <- SML$SampleID |> unique()
 
@@ -22,7 +9,8 @@ IDX <- SML$SampleID |> unique()
 
 
 SID <- sample(IDX,1)
-DATA <- SML[SampleID  %in%  SID ][WL<=WLmax & WL>=WLmin][,.(  WL,R,Rn,Rm)]
+# DATA <- SML[SampleID  %in%  SID ][WL<=WLmax & WL>=WLmin][,.(  WL,R,Rn,Rm)]
+DATA <- SML[SampleID  %in%  SID ][,.(  WL,R,Rn,Rm)] |> na.omit()
 
 
 # I <- c(get_peaks(DATA$Rm),get_peaks(DATA$Rn)) |> unique()

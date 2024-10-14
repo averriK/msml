@@ -58,7 +58,7 @@ get_convex_envelope <- function(x, y, type="upper") {
   DTE <- DTE[, .(y = mean(y)), by = x]  # Average y for duplicate x values
   
   # Interpolate to get the envelope for the full range of x-values
-  Ye <- approx(DTE$x, DTE$y, xout = x)$y-y
+  Ye <- approx(DTE$x, DTE$y, xout = x)$y
   
   
   return(Ye)
