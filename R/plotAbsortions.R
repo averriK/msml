@@ -46,7 +46,8 @@ buildPlot.spectral(
 
 # ------------------------------------------------
 SPECTRA <- list(
-  DATA[,.(ID="raw",X=WL, Y=R)]
+  DATA[,.(ID="raw",X=WL, Y=R)],
+  DATA[,.(ID="Ue",X=WL, Y=Ue)]
 ) |> rbindlist(use.names = TRUE)
 PEAKS <- data.table(ID="peaks",X=DATA$WL[I],Y=DATA$R[I],Y0=DATA$R[I],Y1=DATA$R[I]+DATA$Rn[I])
 
