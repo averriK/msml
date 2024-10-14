@@ -58,7 +58,7 @@ get_convex_envelope <- function(x, y, type="upper") {
   DTE <- DTE[, .(y = mean(y)), by = x]  # Average y for duplicate x values
   
   # Interpolate to get the envelope for the full range of x-values
-  Ye <- approx(DTE$x, DTE$y, xout = x)$y
+  Ye <- approx(DTE$x, DTE$y, xout = x)$y-y
   
   
   return(Ye)
@@ -67,7 +67,12 @@ get_convex_envelope <- function(x, y, type="upper") {
 get_peaks <- function(x,smooth=FALSE,nema=12,ndiff=20,npeaks=10,threshold=0.025 ){
   
   x <- pmax(0,x)
+  if(any(is.na(x))){
+    warning("NA Values in x. Remove NA values before proceeding.")
+    return(data.table())
+  }
   PM <- pracma::findpeaks( x/max(x),threshold=threshold) 
+
   if(is.null(PM)){
     return(data.table())
   }
@@ -88,12 +93,8 @@ get_peaks <- function(x,smooth=FALSE,nema=12,ndiff=20,npeaks=10,threshold=0.025 
   RANK <- RANK[order(-A),]
   
   # Step 4: Drop the "group" column, if not needed
-  # DT <- RANK[,.(A,i)] |> head(npeaks) |> na.omit()
-  RANK <- RANK[order(i),]
-  DT <- RANK$i |> head(npeaks) |> na.omit()
-  
-  
-  return(DT)
+  I <- RANK[order(i)]$i |> head(npeaks)
+  return(I)
 }
 
 getPeaks <- function(x,nema=12,ndiff=20,npeaks=10 ){

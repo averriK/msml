@@ -78,7 +78,15 @@ fwrite(Xi.dsp,"data/Xi.dsp.csv")
 # *********************************************************************************
 # Build Reduced Dataset. Discrete Wavelength range (DWLR)
 # This approach allows to mix different formats (fos, dsp asd) and wavelength ranges
+# ****************************************************
+# Extract Features WL
+DATA <- na.omit(SML)
+AUX <- DATA[,get_peaks(.SD$Rm),by=.(SourceID,SampleID)]
 
+
+# SML <- fread("data/SML.csv")
+# SXL <- SML[ ,getPeaks(x=.SD[,.(WL,R)],ndiff=20,npeaks=10),by=.(SampleID,SourceID)]
+# fwrite(SXL,"data/SXL.csv")
 
 # Get supervised samples
 SampleID_Target <- intersect(unique(LGL$SampleID),unique(SXL$SampleID))
