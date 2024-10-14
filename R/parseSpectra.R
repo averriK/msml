@@ -52,7 +52,7 @@ DATA$SampleID |> unique() |> length() |> sprintf(fmt="There are %d unique Sample
 
 
 # Remove (Aggregate) possible duplicates from different ProjectIDs
-DATA <- DATA[,.(R=mean(R)),by=.(SampleID,SourceID,WL)]
+DATA <- DATA[WL>=1000,.(R=mean(R)),by=.(SampleID,SourceID,WL)]
 
 
 # IDX <- unique(DATA$SampleID) |> sample(size=100)
@@ -62,12 +62,14 @@ SML <- DATA[,.(
   Rm=get_emd_envelope(x=.SD$WL,y=.SD$R),
   Rn=get_convex_envelope(x=.SD$WL,y=.SD$R,type="upper")
 ),by=.(SampleID,SourceID)]
-SML[is.na(Rm),Rm:=0,by=.(SampleID,SourceID)]
+# SML[is.na(Rm),Rm:=0,by=.(SampleID,SourceID)]
 fwrite(SML, "data/SML.csv")
 rm(DATA)
-
 # ****************************************************
 # Extract Features WL
-SML <- fread("data/SML.csv")
-SXL <- SML[ ,getPeaks(x=.SD[,.(WL,R)],ndiff=20,npeaks=10),by=.(SampleID,SourceID)]
-fwrite(SXL,"data/SXL.csv")
+AUX <- SML[,get_peaks(Rm),by=.(SourceID,SampleID)]
+
+
+# SML <- fread("data/SML.csv")
+# SXL <- SML[ ,getPeaks(x=.SD[,.(WL,R)],ndiff=20,npeaks=10),by=.(SampleID,SourceID)]
+# fwrite(SXL,"data/SXL.csv")

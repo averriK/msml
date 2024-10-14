@@ -3,7 +3,6 @@ source("R/utils.R")
 # Get Spectral data
 SML <- fread("data/SML.csv")
 SourceID_Target <- c("dsp","fos") # We cannot MIX asd/sco together with dsp/fos.
-ProjectID_Target <- "mrd"
 WLmin <- 0# 750
 WLmax <- Inf# 2350
 Nema <- 10
@@ -17,36 +16,28 @@ Nema <- 10
 # SID <- "350673"
 # SID <- "GOL077"
 
-IDX <- SML[SourceID %in% SourceID_Target ]$SampleID |> unique()
+IDX <- SML$SampleID |> unique()
 
 # IDX <- c("76J0025","93D0188","92J0783")
 
 
 SID <- sample(IDX,1)
-DT0 <- SML[SampleID  %in%  SID & SourceID %in% SourceID_Target ][WL<=WLmax & WL>=WLmin][,.(
-  WL,R,Rn=get_convex_envelope(x=WL,y=R,type="upper")-R)]
+DATA <- SML[SampleID  %in%  SID ][WL<=WLmax & WL>=WLmin][,.(  WL,R,Rn,Rm)]
 
-# PlotA
-IMF <- gmsp::get_imf(s=DT0$R,ts=DT0$WL,method="emd",noise.amp = .5e-7)
-# smooted spectra
-DT1 <- IMF[!(IMF %in% c("signal","IMF1")),.(R=sum(s)),by=.(WL=t)]
 
-# smoothed spectra with residue removed
-DT2 <- IMF[!(IMF %in% c("signal","IMF1","residue")),.(Rn=-sum(s)),by=.(WL=t)]
+# I <- c(get_peaks(DATA$Rm),get_peaks(DATA$Rn)) |> unique()
+I <- c(get_peaks(DATA$Rm)) |> unique()
 
-DT3 <- IMF[IMF=="residue",.(Rn=s,WL=t)]
-DT.PEAKS <- getPeaks(x=DT0,nema=10,ndiff=20,npeaks=10)
-
+PEAKS <- data.table(ID="peaks",X=DATA$WL[I],Y=DATA$Rn[I])
 # ------------------------------------------------
 SPECTRA <- list(
-  # DT0[,.(ID="envelope",X=WL, Y=Rue)],
-  DT0[,.(ID="raw",X=WL, Y=R)],
-  DT0[,.(ID="ema",X=WL, Y=(TTR::EMA(R, n=Nema)+rev(TTR::EMA(rev(R), n=Nema)))/2)],
-  DT1[,.(ID="emd",X=WL, Y=R)],
-  DT3[,.(ID="res",X=WL, Y=Rn)]
+  # DATA[,.(ID="raw",X=WL, Y=R)],
+  DATA[,.(ID="Rm",X=WL, Y=Rm)],
+  DATA[,.(ID="Rn",X=WL, Y=Rn)],
+  DATA[,.(ID="R",X=WL, Y=R)]
+  
   
 ) |> rbindlist(use.names = TRUE)
-PEAKS <- DT.PEAKS[,.(ID="peaks",X=WL, Y=R)]
 
 buildPlot.spectral(
   data.spectra=SPECTRA, # full spectral dataset
@@ -67,15 +58,9 @@ buildPlot.spectral(
 
 # ------------------------------------------------
 SPECTRA <- list(
-  # DT0[,.(ID="envelope",X=WL, Y=Rue)],
-  DT0[,.(ID="raw",X=WL, Y=Rn)],
-  DT0[,.(ID="ema",X=WL, Y=(TTR::EMA(Rn, n=Nema)+rev(TTR::EMA(rev(Rn), n=Nema)))/2)],
-  DT2[,.(ID="res-imf1",X=WL, Y=Rn)],
-  DT3[,.(ID="res",X=WL, Y=Rn)]
+  DATA[,.(ID="raw",X=WL, Y=R)]
 ) |> rbindlist(use.names = TRUE)
-# PEAKS <- DT0[,.(ID="peaks",X=WL[I], Y=Rn[I])]
-
-PEAKS <- DT.PEAKS[,.(ID="peaks",X=WL, Y=Rn)]
+PEAKS <- data.table(ID="peaks",X=DATA$WL[I],Y=DATA$R[I],Y0=DATA$R[I],Y1=DATA$R[I]+DATA$Rn[I])
 
 buildPlot.spectral(
   data.spectra=SPECTRA, # full spectral dataset

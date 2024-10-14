@@ -64,40 +64,39 @@ get_convex_envelope <- function(x, y, type="upper") {
   return(Ye)
 }
 
-get_peaks <- function(x,nema=12,ndiff=20,npeaks=10,threshold=0.025,smooth=FALSE ){
+get_peaks <- function(x,smooth=FALSE,nema=12,ndiff=20,npeaks=10,threshold=0.025 ){
   
-  
-  if(smooth){
-    x <- (TTR::EMA(x, n=nema)+rev(TTR::EMA(rev(x), n=nema)))/2
-  }
-  
+  x <- pmax(0,x)
   PM <- pracma::findpeaks( x/max(x),threshold=threshold) 
-  if(!is.null(PM)){
-    RANK <- data.table(A=PM[,1]*max(x),i=PM[,2])
-  } else {
-    RANK <- data.table()
+  if(is.null(PM)){
+    return(data.table())
+  }
+  RANK <- data.table(A=PM[,1]*max(x),i=PM[,2])
+  if(smooth==TRUE){
+    xs <- (TTR::EMA(x, n=nema)+rev(TTR::EMA(rev(x), n=nema)))/2
+    i <- which(diff(sign(diff(xs))) == -2) + 1
+    RANK <- rbind(RANK,data.table(A=x[i],i=i))
   }
   
-  i <- which(diff(sign(diff(x))) == -2) + 1
-  RANK <- rbind(RANK,data.table(A=x[i],i=i))
   
-  
-  RANK <- unique(RANK,by="x")
-  RANK <- RANK[order(x),]
+  RANK <- unique(RANK,by="i")
+  RANK <- RANK[order(i),]
   # Step 2: Create groups based on the condition that x differences are less than 10
-  RANK[, G := cumsum(c(TRUE, diff(x) > ndiff))]
+  RANK[, G := cumsum(c(TRUE, diff(i) > ndiff))]
   # Step 3: For each group, select the row with the maximum absorption (A)
   RANK <- RANK[, .SD[which.max(A)], by = G]
   RANK <- RANK[order(-A),]
   
   # Step 4: Drop the "group" column, if not needed
-  DT <- RANK[,.(A,x)] |> head(npeaks) |> na.omit()
+  # DT <- RANK[,.(A,i)] |> head(npeaks) |> na.omit()
+  RANK <- RANK[order(i),]
+  DT <- RANK$i |> head(npeaks) |> na.omit()
   
   
   return(DT)
 }
 
-getPeaks.OLD <- function(x,nema=12,ndiff=20,npeaks=10 ){
+getPeaks <- function(x,nema=12,ndiff=20,npeaks=10 ){
   # 
   WL <- x$WL
   R <- x$R
@@ -136,7 +135,7 @@ get_emd_envelope <- function(x,y,method="emd",noise.amp = .5e-7){
     return(NULL)
   }
   
-  DTE <- IMF[!(IMF %in% c("signal","IMF1","residue")),.(y=sum(s)),by=.(x=t)]
+  DTE <- IMF[!(IMF %in% c("signal","residue")),.(y=-sum(s)),by=.(x=t)]
   Ye <- approx(DTE$x, DTE$y, xout = x)$y
   
   return(Ye)
@@ -215,8 +214,8 @@ buildPlot.spectral <- function(
     HC <- HC |>
       hc_add_series(
         data = data.columns, 
-        type = "column", 
-        hcaes(x = X, y = Y, group = X),  # No need to color by X here, use fixed color
+        type = "columnrange", 
+        hcaes(x = X, low = Y0, high=Y1,group = X),  # No need to color by X here, use fixed color
         color = "lightblue",  # Set color to light grey
         pointWidth = column.width  # Adjust the width of the columns (increase for thicker columns)
       )
