@@ -64,9 +64,9 @@ get_convex_envelope <- function(x, y, type="upper") {
   return(Ye)
 }
 
-get_peaks <- function(x,smooth=FALSE,nema=12,ndiff=20,npeaks=10,threshold=0.025 ){
+get_SML_peaks <- function(.SD,smooth=FALSE,nema=12,ndiff=20,npeaks=10,threshold=0.025 ){
   
-  x <- pmax(0,x)
+  x <- pmax(0,.SD$Rm)
   if(any(is.na(x))){
     warning("NA Values in x. Remove NA values before proceeding.")
     return(data.table())

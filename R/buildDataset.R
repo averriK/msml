@@ -82,8 +82,8 @@ fwrite(Xi.dsp,"data/Xi.dsp.csv")
 # Extract Features WL
 DATA <- na.omit(SML)
 AUX <- DATA[,get_peaks(.SD$Rm),by=.(SourceID,SampleID)]
-
-
+setnames(AUX,old="V1",new="I")
+DATA <- DATA[AUX, on=c("SampleID","SourceID")]
 # SML <- fread("data/SML.csv")
 # SXL <- SML[ ,getPeaks(x=.SD[,.(WL,R)],ndiff=20,npeaks=10),by=.(SampleID,SourceID)]
 # fwrite(SXL,"data/SXL.csv")
