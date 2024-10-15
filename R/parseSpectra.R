@@ -64,6 +64,11 @@ SML <- DATA[,.(
 ),by=.(SampleID,SourceID)]
 
 SML[,Ue:=R+Rn,by=.(SampleID,SourceID)]
+
+# Replace NA values in Rm
+setorder(SML, SampleID, SourceID,WL)
+SML[, Rm := nafill(Rm, type = "nocb"), by = .(SampleID,SourceID)]
+
 # SML[is.na(Rm),Rm:=0,by=.(SampleID,SourceID)]
 fwrite(SML, "data/SML.csv")
 rm(DATA)

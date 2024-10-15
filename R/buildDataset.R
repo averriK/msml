@@ -26,23 +26,18 @@ LGL[,ADL:=NULL]
 LGL <- unique(LGL)
 # *********************************************************************************
 # Build Standard Dataset. Continuous Wavelength range (CWLR)
-# This approach requires the full range of wavelengths with values. Therefore infrared spectra with values below 1400 cannot be mixed with PIMA data with values only for WLlarger than 1400
-
-
-
-# Get WL ranges (1300-2500)
-
-# Get WL range for all spectra. 604 spectral ordinates
-# WLo <- SML$WL |> unique()
-# WL_ranges <- SML[SampleID %in% SampleID_Target,.(minWL=min(WL),maxWL=max(WL)),by=.(SampleID)][order(SampleID)]
-# minWL <-  WL_ranges$minWL |> max()
-# maxWL <-  WL_ranges$maxWL |> min()
-
 # Reshape DATA to wide format
 # If dcast() fails, means that not all spectra has spectral ordinates in all WLo. In that case, resample DATA to WLo ranges
 DATA.asd <- dcast(SML[SourceID=="asd",-c("SourceID")],SampleID~WL,value.var="Rn") 
+DATA.dsp <- dcast(SML[SourceID=="dsp",-c("SourceID")],SampleID~WL,value.var="Rn") 
+DATA.fos <- dcast(SML[SourceID=="fos",-c("SourceID")],SampleID~WL,value.var="Rn") 
+
+DATA <- rbindlist(list(DATA.asd,DATA.dsp,DATA.fos),fill =  TRUE)
+COLS <- setdiff(names(DATA), c("SampleID","SourceID")) |> trimws()
+setnafill(DATA, cols=COLS,fill = 0)
+
 # Restrict DATA to SampleID with lithogeochemistry available
-SampleID_Target <- intersect(unique(LGL$SampleID),unique(SML[SourceID=="asd"]$SampleID)) |> trimws()
+SampleID_Target <- intersect(unique(LGL$SampleID),unique(DATA$SampleID)) |> trimws()
 
 
 
@@ -92,7 +87,7 @@ setnames(DATA,old=COLS,new=paste0("X",COLS))
 
 # Remove Zero columns
 COLS <- setdiff(names(DATA), c("SampleID","SourceID"))
-NZCOLS <- COLS[colSums(DATA[,..COLS]!=0)>0]
+NZCOLS <- c("SampleID","SourceID",COLS[colSums(DATA[,..COLS]!=0)>0])
 DATA <- DATA[,..NZCOLS]
 Xo <- DATA[SampleID %in% IDX] 
 Xi <- DATA[!(SampleID %in% IDX)]
