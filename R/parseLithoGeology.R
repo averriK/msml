@@ -1,4 +1,3 @@
-# import litogeochemistry data  -----------------------------------------
 source("R/setup.R")
 # Dataset A
 # Removed from Source duplicated Ni. We kept Ni values which most values above the DL 
@@ -77,21 +76,34 @@ AUX <- data.table::melt(DATA, id.vars = ivars, measure.vars = mvars,variable.nam
 
 # Identify concentrations below the instrument detection limits (IDL)
 AUX[,BDL:=grepl(ElementValue,pattern="^<")]
-AUX[BDL == TRUE, ElementValue := as.numeric(sub("^<", "", ElementValue))]
-# Identify concentrations above the instrument detection limits (ADL)
-AUX[,ADL:=grepl(ElementValue,pattern="^>")]
-AUX[ADL == TRUE, ElementValue := as.numeric(sub("^>", "", ElementValue))]
-# Replace non-numeric values by 0
-AUX[grepl("^[^0-9.-]*$", ElementValue),ElementValue:=0]
-# Convert to numeric
-# AUX[is.na(as.nmeric(ElementValue))] ?
-AUX[,ElementValue:=as.double(ElementValue)] 
+AUX[BDL == TRUE, ElementValue := sub("^<", "", ElementValue)]
 
+
+# Identify concentrations above the instrument detection limits (ADL)
+AUX[grepl(ElementValue,pattern="^>"), ElementValue := sub("^>", "", ElementValue)]
+
+# Record Detection Limits
+AUX[BDL == TRUE, DL := ElementValue,by=.(SampleID,ElementID,SetID)]
+
+# Identify ElementValue<DL and BDL==FALSE and set BDL:=TRUE
+AUX[ElementValue<=DL & BDL==FALSE, BDL:=TRUE,by=.(SampleID,ElementID,SetID)]
+
+# Replace non-numeric values by 0
+AUX[grepl("^[^0-9.-]*$", ElementValue),ElementValue:=NA]
+# Convert to numeric
+# AUX[is.na(as.numeric(ElementValue))] ?
+AUX[,ElementValue:=as.double(ElementValue)] 
+AUX[,DL:=as.double(DL)] 
+
+
+
+
+# ******************************************************************************
 # Aggregate data. Remove SetID. Average parameters 
-AUX <- AUX[,.(ElementValue=mean(ElementValue)),by=.(SampleID,ElementID,isDrillhole,BDL,ADL)] 
+AUX <- AUX[,.(ElementValue=mean(ElementValue)),by=.(SampleID,ElementID,isDrillhole,BDL)] 
 
 # Check that there are not elements with the same SampleID
-AUX[,.(n=.N),by=.(SampleID,ElementID,isDrillhole,BDL,ADL)][n>1]
+AUX[,.(n=.N),by=.(SampleID,ElementID,isDrillhole,BDL)][n>1]
 
 
 LGL <- AUX |> unique()

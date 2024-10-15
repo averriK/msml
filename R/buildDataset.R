@@ -66,6 +66,9 @@ Xi <- DATA[!(SampleID %in% IDX)]
 Yo <- LGL[SampleID %in% IDX,.(Y=mean(ElementValue)),by=.(ElementID,SampleID)]
 
 
+fwrite(Xo,"data/Xo.Rn.csv")
+fwrite(Xi,"data/Xi.Rn.csv")
+fwrite(Yo,"data/Yo.Rn.csv")
 
 
 
