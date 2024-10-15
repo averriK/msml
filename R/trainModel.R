@@ -20,8 +20,9 @@ tuneLength <- 19
 trControl <-  trainControl(
   method = "cv",
   number = 10,
-  summaryFunction = twoClassSummary,
-  classProbs = TRUE, # IMPORTANT!
+  # summaryFunction = twoClassSummary, # ONLY for CLASSIFICATION
+  summaryFunction = defaultSummary,
+  # classProbs = TRUE, # IMPORTANT! # ONLY for CLASSIFICATION 
   verboseIter = TRUE,
   allowParallel = TRUE)
 SET <- SET_list[1]
@@ -32,7 +33,7 @@ for(SET in SET_list){
   for(YoID in YoID_list){
     Yo_AUX <- Yo[ElementID==YoID]
     DT.train <- Xo[Yo_AUX,on=.(SampleID)][,-c("SampleID","ElementID","SourceID")]
-    DT.train[,Y:=factor(ifelse(Y>0,"Y","N"))]
+    # DT.train[,Y:=factor(ifelse(Y>0,"Y","N"))] # ONLY for CLASSIFICATION
     
     for(ML in ML_list){
       
@@ -45,7 +46,8 @@ for(SET in SET_list){
         trControl = trControl,
         tuneLength = tuneLength,
         preProcess=c("nzv"),
-        metric="ROC"
+        metric="MAE" 
+        # metric="ROC" # ONLY for CLASSIFICATION
       )
       
       # *********************************************************************************
