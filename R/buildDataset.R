@@ -16,13 +16,10 @@ SXL <- fread("data/SXL.csv")
 
 
 # Detection Limits
-kB <- 0 # 0% of below-detection limit 
-kA <- 1 # 100% below-detection limit data
+kB <- 1 # 0% of below-detection limit 
 # Fix BDL/ADL values
 LGL[BDL==TRUE,ElementValue:=kB*ElementValue,by=.(ElementID,ElementValue)]
-LGL[ADL==TRUE,ElementValue:=kA*ElementValue,by=.(ElementID,ElementValue)]
 LGL[,BDL:=NULL]
-LGL[,ADL:=NULL]
 LGL <- unique(LGL)
 # *********************************************************************************
 # Build Standard Dataset. Continuous Wavelength range (CWLR)
