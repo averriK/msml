@@ -64,9 +64,10 @@ get_convex_envelope <- function(x, y, type="upper") {
   return(Ye)
 }
 
-get_SML_peaks <- function(.SD,smooth=FALSE,nema=12,ndiff=20,npeaks=10,threshold=0.025 ){
+get_peaks <- function(.SD,x,smooth=FALSE,nema=12,ndiff=20,npeaks=10,threshold=0.025 ){
   
-  x <- pmax(0,.SD$Rm)
+  x <- pmax(0,x)
+  
   if(any(is.na(x))){
     warning("NA Values in x. Remove NA values before proceeding.")
     return(data.table())
@@ -94,7 +95,7 @@ get_SML_peaks <- function(.SD,smooth=FALSE,nema=12,ndiff=20,npeaks=10,threshold=
   
   # Step 4: Drop the "group" column, if not needed
   I <- RANK[order(i)]$i |> head(npeaks)
-  return(I)
+  return(.SD[I])
 }
 
 getPeaks <- function(x,nema=12,ndiff=20,npeaks=10 ){

@@ -3,7 +3,7 @@ source("R/utils.R")
 # Get Spectral data
 SML <- fread("data/SML.csv")
 
-IDX <- SML$SampleID |> unique()
+IDX <- SML[SourceID=="dsp"]$SampleID |> unique()
 
 # IDX <- c("76J0025","93D0188","92J0783")
 
@@ -14,9 +14,7 @@ DATA <- SML[SampleID  %in%  SID ][,.(  WL,R,Rn,Rm)] |> na.omit()
 
 
 # I <- c(get_peaks(DATA$Rm),get_peaks(DATA$Rn)) |> unique()
-I <- c(get_peaks(DATA$Rm)) |> unique()
-
-PEAKS <- data.table(ID="peaks",X=DATA$WL[I],Y=DATA$Rn[I])
+PEAKS <- get_peaks(.SD=DATA,x=DATA$Rm)[,.(ID="peaks",X=WL,Y=Rn)]
 # ------------------------------------------------
 SPECTRA <- list(
   # DATA[,.(ID="raw",X=WL, Y=R)],

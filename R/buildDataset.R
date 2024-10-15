@@ -81,24 +81,24 @@ fwrite(Xi.dsp,"data/Xi.dsp.csv")
 # ****************************************************
 # Extract Features WL
 DATA <- na.omit(SML)
-AUX <- DATA[,get_peaks(.SD$Rm),by=.(SourceID,SampleID)]
-setnames(AUX,old="V1",new="I")
-DATA <- DATA[AUX, on=c("SampleID","SourceID")]
-# SML <- fread("data/SML.csv")
-# SXL <- SML[ ,getPeaks(x=.SD[,.(WL,R)],ndiff=20,npeaks=10),by=.(SampleID,SourceID)]
-# fwrite(SXL,"data/SXL.csv")
-
+SXL <- DATA[,get_peaks(.SD,x=.SD$Rm),by=.(SourceID,SampleID)]
+fwrite(SXL,"data/SXL.csv")
 # Get supervised samples
-SampleID_Target <- intersect(unique(LGL$SampleID),unique(SXL$SampleID))
-Yo <- LGL[SampleID %in% SampleID_Target,.(Y=mean(ElementValue)),by=.(ElementID,SampleID)]
+IDX <- intersect(unique(LGL$SampleID),unique(SXL$SampleID)) |> unique()
 
-DATA <- dcast(SXL,SampleID+SourceID~WL,value.var="A",fill =0) 
+DATA <- dcast(SXL[,.(SourceID,SampleID,WL,A=Rn)],SampleID+SourceID~WL,value.var="A",fill =0) 
 COLS <- setdiff(names(DATA), c("SampleID","SourceID")) |> trimws()
-Xo <- DATA[SampleID %in% SampleID_Target] |> setnames(old=COLS,new=paste0("X",COLS))
-Xi <- DATA[!(SampleID %in% SampleID_Target)] |> setnames(old=COLS,new=paste0("X",COLS))
-Yo <- LGL[SampleID %in% SampleID_Target,.(Y=mean(ElementValue)),by=.(ElementID,SampleID)]
+setnames(DATA,old=COLS,new=paste0("X",COLS))
+
+# Remove Zero columns
+COLS <- setdiff(names(DATA), c("SampleID","SourceID"))
+NZCOLS <- COLS[colSums(DATA[,..COLS]!=0)>0]
+DATA <- DATA[,..NZCOLS]
+Xo <- DATA[SampleID %in% IDX] 
+Xi <- DATA[!(SampleID %in% IDX)]
+Yo <- LGL[SampleID %in% IDX,.(Y=mean(ElementValue)),by=.(ElementID,SampleID)]
 
 
-fwrite(Xo,"data/Xo.csv")
-fwrite(Xi,"data/Xi.csv")
-fwrite(Yo,"data/Yo.csv")
+fwrite(Xo,"data/Xo.An.csv")
+fwrite(Xi,"data/Xi.An.csv")
+fwrite(Yo,"data/Yo.An.csv")
