@@ -55,9 +55,8 @@ rsconnect/
 # Ignore data folder at the root and in subdirectories
 data/
 data-raw/
-models/
 spectra/
-pred/
+
 
 # Local Netlify folder
 .netlify
