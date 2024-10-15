@@ -28,43 +28,42 @@ LGL <- unique(LGL)
 # Build Standard Dataset. Continuous Wavelength range (CWLR)
 # Reshape DATA to wide format
 # If dcast() fails, means that not all spectra has spectral ordinates in all WLo. In that case, resample DATA to WLo ranges
-DATA.asd <- dcast(SML[SourceID=="asd",-c("SourceID")],SampleID~WL,value.var="Rn") 
-DATA.dsp <- dcast(SML[SourceID=="dsp",-c("SourceID")],SampleID~WL,value.var="Rn") 
-DATA.fos <- dcast(SML[SourceID=="fos",-c("SourceID")],SampleID~WL,value.var="Rn") 
+# This approach requires the full range of wavelengths with values. Therefore infrared spectra with values below 1400 cannot be mixed with PIMA data with values only for WLlarger than 1400
 
-DATA <- rbindlist(list(DATA.asd,DATA.dsp,DATA.fos),fill =  TRUE)
+
+# *********************************************************************************
+# Build Standard Dataset. Continuous Wavelength range (CWLR)
+# ASD spectra has WL 300,301,...1000,1001,1002,1003...
+# DSP spectra has WL 1300,1302,1304,....
+# FOS spectra has WL 1300,1302,1304,....
+# The following code resamples all SourceID groups to the same WL range
+
+# Get WL range for all spectra. 604 spectral ordinates
+WLo <- SML$WL |> unique()
+# build a function is.odd(x) that reports TRUE if x is odd and FALSE otherwise
+is.odd <- function(x) x %% 2 != 0
+# Remove odd values from WLo using is.odd()
+WLo <- WLo[!is.odd(WLo)]
+# Remove NA values if any, otherwise approx() fails
+SML <- na.omit(SML)
+# Resample all SourceID groups to the same WL range
+AUX <- SML[,.(WL=WLo,Rn=approx(x=.SD$WL,y=.SD$Rn,xout=WLo,yleft=0)$y),by=.(SampleID,SourceID)]
+# Reshape DATA to wide format
+DATA <- dcast(AUX,SampleID+SourceID~WL,value.var="Rn") 
+
+# rename cols
 COLS <- setdiff(names(DATA), c("SampleID","SourceID")) |> trimws()
-setnafill(DATA, cols=COLS,fill = 0)
+setnames(DATA,old=COLS,new=paste0("X",COLS))
 
+# Remove Zero columns
+COLS <- setdiff(names(DATA), c("SampleID","SourceID"))
+NZCOLS <- c("SampleID","SourceID",COLS[colSums(DATA[,..COLS]!=0)>0])
+DATA <- DATA[,..NZCOLS]
 # Restrict DATA to SampleID with lithogeochemistry available
-SampleID_Target <- intersect(unique(LGL$SampleID),unique(DATA$SampleID)) |> trimws()
-
-
-
-COLS <- setdiff(names(DATA.asd), c("SampleID")) |> trimws()
-Xo.asd <- DATA.asd[SampleID %in% SampleID_Target] |> setnames(old=COLS,new=paste0("X",COLS))
-Xi.asd <- DATA.asd[!(SampleID %in% SampleID_Target)] |> setnames(old=COLS,new=paste0("X",COLS))
-# Build Yo
-# Remove (aggregate) isDrillhole
-Yo.asd <- LGL[SampleID %in% SampleID_Target,.(Y=mean(ElementValue)),by=.(ElementID,SampleID)]
-fwrite(Yo.asd,"data/Yo.asd.csv")
-fwrite(Xo.asd,"data/Xo.asd.csv")
-fwrite(Xi.asd,"data/Xi.asd.csv")
-
-
-DATA.dsp <- dcast(SML[SourceID=="dsp",-c("SourceID")],SampleID~WL,value.var="Rn") 
-SampleID_Target <- intersect(unique(LGL$SampleID),unique(SML[SourceID=="dsp"]$SampleID)) |> trimws()
-COLS <- setdiff(names(DATA.dsp), c("SampleID")) |> trimws()
-Xo.dsp <- DATA.dsp[SampleID %in% SampleID_Target] |> setnames(old=COLS,new=paste0("X",COLS))
-Xi.dsp <- DATA.dsp[!(SampleID %in% SampleID_Target)] |> setnames(old=COLS,new=paste0("X",COLS))
-# Build Yo
-# Remove (aggregate) isDrillhole
-Yo.dsp <- LGL[SampleID %in% SampleID_Target,.(Y=mean(ElementValue)),by=.(ElementID,SampleID)]
-fwrite(Yo.dsp,"data/Yo.dsp.csv")
-fwrite(Xo.dsp,"data/Xo.dsp.csv")
-fwrite(Xi.dsp,"data/Xi.dsp.csv")
-
-
+IDX <- intersect(unique(LGL$SampleID),unique(DATA$SampleID)) 
+Xo <- DATA[SampleID %in% IDX] 
+Xi <- DATA[!(SampleID %in% IDX)]
+Yo <- LGL[SampleID %in% IDX,.(Y=mean(ElementValue)),by=.(ElementID,SampleID)]
 
 
 
@@ -82,6 +81,7 @@ fwrite(SXL,"data/SXL.csv")
 IDX <- intersect(unique(LGL$SampleID),unique(SXL$SampleID)) |> unique()
 
 DATA <- dcast(SXL[,.(SourceID,SampleID,WL,A=Rn)],SampleID+SourceID~WL,value.var="A",fill =0) 
+# rename cols
 COLS <- setdiff(names(DATA), c("SampleID","SourceID")) |> trimws()
 setnames(DATA,old=COLS,new=paste0("X",COLS))
 
@@ -89,6 +89,7 @@ setnames(DATA,old=COLS,new=paste0("X",COLS))
 COLS <- setdiff(names(DATA), c("SampleID","SourceID"))
 NZCOLS <- c("SampleID","SourceID",COLS[colSums(DATA[,..COLS]!=0)>0])
 DATA <- DATA[,..NZCOLS]
+# Restrict DATA to SampleID with lithogeochemistry available
 Xo <- DATA[SampleID %in% IDX] 
 Xi <- DATA[!(SampleID %in% IDX)]
 Yo <- LGL[SampleID %in% IDX,.(Y=mean(ElementValue)),by=.(ElementID,SampleID)]
