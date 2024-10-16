@@ -1,7 +1,7 @@
 rm(list=ls())
 source("R/setup.R")
 LGL <- fread("data/LGL.csv")
-YoID_target <- LGL[!(ElementID%in%c("Sum","MnO","MgO","P2O5","Cr2O3","CaO","Al2O3","Fe2O3","SiO2","K2O","TiO2", "LOI"   ,"Na2O","Total_C", "Total_S"   ))]$ElementID |> unique()
+YoID_target <- "Au" #LGL[!(ElementID%in%c("Sum","MnO","MgO","P2O5","Cr2O3","CaO","Al2O3","Fe2O3","SiO2","K2O","TiO2", "LOI"   ,"Na2O","Total_C", "Total_S"   ))]$ElementID |> unique()
 
 tuneLength <- 10 
 trControl <-  trainControl(
@@ -10,7 +10,7 @@ trControl <-  trainControl(
   summaryFunction = defaultSummary,
   verboseIter = TRUE,
   allowParallel = TRUE)
-SET <- "An"# An,Rn
+SET <- "Rn"# An,Rn
 ML <- "ranger" # c("svmRadialSigma","ranger","avNNet","glmnet")
 
 Xo <- fread(paste0("data/Xo.",SET,".csv"))
@@ -40,7 +40,7 @@ for(YoID in YoID_target){
   registerDoSEQ()  # Ensure that parallel processing is turned off
   rm(cl)           # Remove the cluster object from the environment
   # *********************************************************************************
-  saveRDS(model, file = paste0("models/regression/",SET,"_",ML,"_",YoID,".Rds"))
+  saveRDS(model, file = paste0("train/regression/",SET,"_",ML,"_",YoID,".Rds"))
 }
 
 
