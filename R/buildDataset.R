@@ -6,7 +6,8 @@ source("R/utils.R")
 LGL <- fread("data/LGL.csv") 
 # Load Spectral data LONG
 SML <- fread("data/SML.csv") 
-
+SXL <- SML[,get_peaks(.SD,x=.SD$Rm),by=.(SourceID,SampleID)]
+fwrite(SXL,"data/SXL.csv")
 
 # Option A. (R) Full spectra
 # TYPE <- "R" 
