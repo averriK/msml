@@ -39,6 +39,11 @@ LGL <- unique(LGL)
 WLo <- SML$WL |> unique()
 # build a function is.odd(x) that reports TRUE if x is odd and FALSE otherwise
 is.odd <- function(x) x %% 2 != 0
+# constant column check
+removeZV <- function(.x) {
+  XCOL <- .x[, sapply(.SD, function(y) length(unique(y)) == 1)]
+  .x[, !XCOL, with = FALSE]
+}
 # Remove odd values from WLo using is.odd()
 WLo <- WLo[!is.odd(WLo)]
 # Remove NA values if any, otherwise approx() fails
@@ -52,17 +57,21 @@ DATA <- dcast(AUX,SampleID+SourceID~WL,value.var="Rn")
 COLS <- setdiff(names(DATA), c("SampleID","SourceID")) |> trimws()
 setnames(DATA,old=COLS,new=paste0("X",COLS))
 
-# Remove Zero columns
-COLS <- setdiff(names(DATA), c("SampleID","SourceID"))
-NZCOLS <- c("SampleID","SourceID",COLS[colSums(DATA[,..COLS]!=0)>0])
-DATA <- DATA[,..NZCOLS]
-# Restrict DATA to SampleID with lithogeochemistry available
+
 IDX <- intersect(unique(LGL$SampleID),unique(DATA$SampleID)) 
+
+
+
+# Restrict DATA to SampleID with lithogeochemistry available
 Xo <- DATA[SampleID %in% IDX] 
-Xi <- DATA[!(SampleID %in% IDX)]
+# Remove Zero-Variance columns 
+Xo <- removeZV(Xo)  
+# Build unsupervised Dataset
+COLS <- names(Xo)
+Xi <- DATA[!(SampleID %in% IDX),..COLS]
 Yo <- LGL[SampleID %in% IDX,.(Y=mean(ElementValue)),by=.(ElementID,SampleID)]
-
-
+# Check column integrity
+names(Xo) %in% names(Xi) |> all()
 fwrite(Xo,"data/Xo.Rn.csv")
 fwrite(Xi,"data/Xi.Rn.csv")
 fwrite(Yo,"data/Yo.Rn.csv")
@@ -84,16 +93,16 @@ DATA <- dcast(SXL[,.(SourceID,SampleID,WL,A=Rn)],SampleID+SourceID~WL,value.var=
 # rename cols
 COLS <- setdiff(names(DATA), c("SampleID","SourceID")) |> trimws()
 setnames(DATA,old=COLS,new=paste0("X",COLS))
-
-# Remove Zero columns
-COLS <- setdiff(names(DATA), c("SampleID","SourceID"))
-NZCOLS <- c("SampleID","SourceID",COLS[colSums(DATA[,..COLS]!=0)>0])
-DATA <- DATA[,..NZCOLS]
 # Restrict DATA to SampleID with lithogeochemistry available
 Xo <- DATA[SampleID %in% IDX] 
-Xi <- DATA[!(SampleID %in% IDX)]
+# Remove Zero-Variance columns 
+Xo <- removeZV(Xo)  
+# Build unsupervised Dataset
+COLS <- names(Xo)
+Xi <- DATA[!(SampleID %in% IDX),..COLS]
 Yo <- LGL[SampleID %in% IDX,.(Y=mean(ElementValue)),by=.(ElementID,SampleID)]
-
+# Check column integrity
+names(Xo) %in% names(Xi) |> all()
 
 fwrite(Xo,"data/Xo.An.csv")
 fwrite(Xi,"data/Xi.An.csv")
