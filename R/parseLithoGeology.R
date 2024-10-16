@@ -39,6 +39,9 @@ LITH_B[isDrillhole!="N",isDrillhole:=TRUE]
 LITH_A[,Wgt:=NULL]
 LITH_B[,Wgt:=NULL]
 
+
+
+
 # Common Features
 union(colnames(LITH_A),colnames(LITH_B)) |> unique() |> length() |> sprintf(fmt="There are %d features in A and B")
 
@@ -76,6 +79,16 @@ AUX <- data.table::melt(DATA, id.vars = ivars, measure.vars = mvars,variable.nam
 
 # Fix SampleID codes. 
 
+AUX[,ElementID:=gsub(" *[[:space:]]+.*", "", ElementID)]
+AUX[,ElementID:=gsub("[-.]", "", ElementID)]
+
+
+# Remove Elements
+AUX <- AUX[!(ElementID%in%c("Sum","MnO","MgO","P2O5","Cr2O3","CaO","Al2O3","Fe2O3","SiO2","K2O","TiO2", "LOI"   ,"Na2O","Total_C", "Total_S"))]
+
+
+# Fix SampleID codes. 
+
 AUX[,SampleID:=gsub(" \\d+\\.\\d+M", "", SampleID)]
 AUX[,SampleID:=gsub(" \\d+\\.\\d+FT", "", SampleID)]
 AUX[,SampleID:=gsub(" *[[:space:]]+.*", "", SampleID)]
@@ -83,7 +96,8 @@ AUX[,SampleID:=gsub("[-.]", "", SampleID)]
 AUX[,SampleID:=toupper(SampleID)]
 
 
-
+# ******************************************************************************
+# Detection limits
 # Identify concentrations below the instrument detection limits (IDL)
 AUX[,BDL:=grepl(ElementValue,pattern="^<")]
 
@@ -101,18 +115,28 @@ AUX <- AUX[!(grepl("^[^0-9.-]*$", ElementValue))]
 # AUX[is.na(as.numeric(ElementValue))] ?
 AUX[,ElementValue:=as.double(ElementValue)] 
 
-# Check that there are not elements with the same SampleID
-AUX[,n:=.N,by=.(SampleID,ElementID,isDrillhole)]
+#Find Detection Limits
+AUX[,DL:=0]
+
+# Define the detection limits as the maximum value of the element in the sample
+AUX[BDL==TRUE,DL:=max(ElementValue),by=.(ElementID)]
+AUX[,DL:=max(DL),by=.(ElementID)]
+AUX[BDL==FALSE & DL==0,DL:=min(ElementValue),by=.(ElementID)]
+
+
+AUX[,nADL:=floor(ElementValue/DL),by=.(ElementID)]
 
 
 # ******************************************************************************
-# Aggregate data. Remove SetID. Average parameters 
-AUX[n>1,ElementValue:=mean(ElementValue),by=.(SampleID,ElementID)] 
+# Check that there are not elements with the same SampleID
+AUX[,ElementValue:=mean(ElementValue),by=.(SampleID,ElementID,SetID)] 
+
+# aggregate Samples with same SampleID on differents SetID
+AUX[,ElementValue:=mean(ElementValue),by=.(SampleID,ElementID)] 
 
 
 
-
-LGL <- AUX[,.(SampleID,ElementID,IDH=isDrillhole,BDL,ElementValue)] |> unique()
+LGL <- AUX[,.(SampleID,ElementID,IDH=isDrillhole,nADL,ElementValue)] |> unique()
 
 
 

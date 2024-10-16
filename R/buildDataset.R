@@ -1,25 +1,18 @@
+rm(list=ls())
 source("R/setup.R")
 source("R/utils.R")
-# Load Master Index ?
-MasterIDX <- fread("data/Index.csv",check.names=TRUE)
+
 # Load Lithology LONG 
 LGL <- fread("data/LGL.csv") 
 # Load Spectral data LONG
 SML <- fread("data/SML.csv") 
-# Load Spectral data LONG
-SXL <- fread("data/SXL.csv") 
+
 
 # Option A. (R) Full spectra
 # TYPE <- "R" 
 # Option B. Train model with Rn, without envelope
 # TYPE <- "Rn"
 
-
-# Detection Limits
-kB <- 1 # 0% of below-detection limit 
-# Fix BDL/ADL values
-LGL[BDL==TRUE,ElementValue:=kB*ElementValue,by=.(ElementID,ElementValue)]
-LGL[,BDL:=NULL]
 LGL <- unique(LGL)
 # *********************************************************************************
 # Build Standard Dataset. Continuous Wavelength range (CWLR)
@@ -37,13 +30,7 @@ LGL <- unique(LGL)
 
 # Get WL range for all spectra. 604 spectral ordinates
 WLo <- SML$WL |> unique()
-# build a function is.odd(x) that reports TRUE if x is odd and FALSE otherwise
-is.odd <- function(x) x %% 2 != 0
-# constant column check
-removeZV <- function(.x) {
-  XCOL <- .x[, sapply(.SD, function(y) length(unique(y)) == 1)]
-  .x[, !XCOL, with = FALSE]
-}
+
 # Remove odd values from WLo using is.odd()
 WLo <- WLo[!is.odd(WLo)]
 # Remove NA values if any, otherwise approx() fails
@@ -65,11 +52,12 @@ IDX <- intersect(unique(LGL$SampleID),unique(DATA$SampleID))
 # Restrict DATA to SampleID with lithogeochemistry available
 Xo <- DATA[SampleID %in% IDX] 
 # Remove Zero-Variance columns 
-Xo <- removeZV(Xo)  
+Xo <- removeNZV(Xo)  
+
 # Build unsupervised Dataset
 COLS <- names(Xo)
 Xi <- DATA[!(SampleID %in% IDX),..COLS]
-Yo <- LGL[SampleID %in% IDX,.(Y=mean(ElementValue)),by=.(ElementID,SampleID)]
+Yo <- LGL[SampleID %in% IDX,.(ElementID,SampleID,ElementValue,nADL)]
 # Check column integrity
 names(Xo) %in% names(Xi) |> all()
 fwrite(Xo,"data/Xo.Rn.csv")
@@ -82,10 +70,8 @@ fwrite(Yo,"data/Yo.Rn.csv")
 # Build Reduced Dataset. Discrete Wavelength range (DWLR)
 # This approach allows to mix different formats (fos, dsp asd) and wavelength ranges
 # ****************************************************
-# Extract Features WL
-DATA <- na.omit(SML)
-SXL <- DATA[,get_peaks(.SD,x=.SD$Rm),by=.(SourceID,SampleID)]
-fwrite(SXL,"data/SXL.csv")
+# Load Spectral data LONG
+SXL <- fread("data/SXL.csv") 
 # Get supervised samples
 IDX <- intersect(unique(LGL$SampleID),unique(SXL$SampleID)) |> unique()
 
@@ -96,13 +82,15 @@ setnames(DATA,old=COLS,new=paste0("X",COLS))
 # Restrict DATA to SampleID with lithogeochemistry available
 Xo <- DATA[SampleID %in% IDX] 
 # Remove Zero-Variance columns 
-Xo <- removeZV(Xo)  
+Xo <- removeNZV(Xo)  
+
 # Build unsupervised Dataset
 COLS <- names(Xo)
 Xi <- DATA[!(SampleID %in% IDX),..COLS]
-Yo <- LGL[SampleID %in% IDX,.(Y=mean(ElementValue)),by=.(ElementID,SampleID)]
+Yo <- LGL[SampleID %in% IDX,.(ElementID,SampleID,ElementValue,nADL)]
 # Check column integrity
 names(Xo) %in% names(Xi) |> all()
+# data.train <- Xo[Yo[ElementID==YoID],on=.(SampleID)][,-c("SampleID","ElementID","SourceID")]
 
 fwrite(Xo,"data/Xo.An.csv")
 fwrite(Xi,"data/Xi.An.csv")

@@ -16,9 +16,4 @@ YoID <- "Au"
 ML <- "ranger"
 # Load model
 FILE <- file.path(PATH,paste0(SET,"_",ML,"_",YoID,".Rds"))
-model <- readRDS(file = FILE)
-
-I <- as.numeric(row.names(model$bestTune))
-model$results$RMSE[I]
-model$results$Rsquared[I]
-model$results$MAE[I]
+MODEL <- readRDS(file = FILE)

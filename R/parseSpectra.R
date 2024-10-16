@@ -73,3 +73,6 @@ SML[, Rm := nafill(Rm, type = "nocb"), by = .(SampleID,SourceID)]
 fwrite(SML, "data/SML.csv")
 rm(DATA)
 
+SXL <- SML[,get_peaks(.SD,x=.SD$Rm),by=.(SourceID,SampleID)]
+fwrite(SXL,"data/SXL.csv")
+

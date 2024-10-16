@@ -97,38 +97,48 @@ get_peaks <- function(.SD,x,smooth=FALSE,nema=12,ndiff=20,npeaks=10,threshold=0.
   I <- RANK[order(i)]$i |> head(npeaks)
   return(.SD[I])
 }
+is.odd <- function(x) x %% 2 != 0
 
-getPeaks <- function(x,nema=12,ndiff=20,npeaks=10 ){
-  # 
-  WL <- x$WL
-  R <- x$R
-  Rue <- get_convex_envelope(x=WL,y=R,type="upper")
-  Rn <- Rue-R
-  PM <- pracma::findpeaks( Rn/max(Rn),threshold=0.025) 
-  if(!is.null(PM)){
-    RANK <- data.table(A=PM[,1]*max(Rn),WL=WL[PM[,2]],i=PM[,2])
-  } else {
-    RANK <- data.table()
-  }
-  
-  
-  Re <- (TTR::EMA(Rn, n=nema)+rev(TTR::EMA(rev(Rn), n=nema)))/2
-  i <- which(diff(sign(diff(Re))) == -2) + 1
-  RANK <- rbind(RANK,data.table(A=Re[i],WL=WL[i],i=i))
-  RANK <- unique(RANK,by="WL")
-  RANK <- RANK[order(WL),]
-  # Step 2: Create groups based on the condition that WL differences are less than 10
-  RANK[, G := cumsum(c(TRUE, diff(WL) > ndiff))]
-  # Step 3: For each group, select the row with the maximum absorption (A)
-  RANK <- RANK[, .SD[which.max(A)], by = G]
-  RANK <- RANK[order(-A),]
-  
-  # Step 4: Drop the "group" column, if not needed
-  DT <- RANK[,.(A,WL,R=R[i],Rn=Rn[i],Re=Re[i])] |> head(npeaks) |> na.omit()
-  
-  
-  return(DT)
+
+removeNZV<- function(.x,freqCut = 95/5, uniqueCut = 10) {
+  x <- .x[,-c("SampleID","SourceID")]
+  AUX <- nearZeroVar(x,saveMetrics = TRUE)
+  NZV <- as.data.table(AUX)[,ID:=row.names(AUX)]
+  XCOL <- NZV[!(nzv==FALSE & zeroVar==FALSE)]$ID
+  .x[, !XCOL, with = FALSE]
 }
+
+# getPeaks <- function(x,nema=12,ndiff=20,npeaks=10 ){
+#   # 
+#   WL <- x$WL
+#   R <- x$R
+#   Rue <- get_convex_envelope(x=WL,y=R,type="upper")
+#   Rn <- Rue-R
+#   PM <- pracma::findpeaks( Rn/max(Rn),threshold=0.025) 
+#   if(!is.null(PM)){
+#     RANK <- data.table(A=PM[,1]*max(Rn),WL=WL[PM[,2]],i=PM[,2])
+#   } else {
+#     RANK <- data.table()
+#   }
+#   
+#   
+#   Re <- (TTR::EMA(Rn, n=nema)+rev(TTR::EMA(rev(Rn), n=nema)))/2
+#   i <- which(diff(sign(diff(Re))) == -2) + 1
+#   RANK <- rbind(RANK,data.table(A=Re[i],WL=WL[i],i=i))
+#   RANK <- unique(RANK,by="WL")
+#   RANK <- RANK[order(WL),]
+#   # Step 2: Create groups based on the condition that WL differences are less than 10
+#   RANK[, G := cumsum(c(TRUE, diff(WL) > ndiff))]
+#   # Step 3: For each group, select the row with the maximum absorption (A)
+#   RANK <- RANK[, .SD[which.max(A)], by = G]
+#   RANK <- RANK[order(-A),]
+#   
+#   # Step 4: Drop the "group" column, if not needed
+#   DT <- RANK[,.(A,WL,R=R[i],Rn=Rn[i],Re=Re[i])] |> head(npeaks) |> na.omit()
+#   
+#   
+#   return(DT)
+# }
 
 get_emd_envelope <- function(x,y,method="emd",noise.amp = .5e-7){
   # browser()
