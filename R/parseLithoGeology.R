@@ -74,61 +74,45 @@ ivars <- c("SampleID","SetID","isDrillhole")
 mvars <- colnames(DATA[, - c("SampleID","SetID","isDrillhole")])
 AUX <- data.table::melt(DATA, id.vars = ivars, measure.vars = mvars,variable.name = "ElementID",value.name="ElementValue") |> na.omit()
 
+# Fix SampleID codes. 
+
+AUX[,SampleID:=gsub(" \\d+\\.\\d+M", "", SampleID)]
+AUX[,SampleID:=gsub(" \\d+\\.\\d+FT", "", SampleID)]
+AUX[,SampleID:=gsub(" *[[:space:]]+.*", "", SampleID)]
+AUX[,SampleID:=gsub("[-.]", "", SampleID)]
+AUX[,SampleID:=toupper(SampleID)]
+
+
+
 # Identify concentrations below the instrument detection limits (IDL)
 AUX[,BDL:=grepl(ElementValue,pattern="^<")]
-AUX[BDL == TRUE, ElementValue := sub("^<", "", ElementValue)]
-
 
 # Identify concentrations above the instrument detection limits (ADL)
 AUX[grepl(ElementValue,pattern="^>"), ElementValue := sub("^>", "", ElementValue)]
 
-# Record Detection Limits
-AUX[BDL == TRUE, DL := ElementValue,by=.(SampleID,ElementID,SetID)]
-
-# Identify ElementValue<DL and BDL==FALSE and set BDL:=TRUE
-AUX[ElementValue<=DL & BDL==FALSE, BDL:=TRUE,by=.(SampleID,ElementID,SetID)]
+#
+AUX[BDL == TRUE, ElementValue := sub("^<", "", ElementValue)]
+AUX[ElementValue=="",`:=`(ElementValue=0,BDL=TRUE)]
 
 # Replace non-numeric values by 0
-AUX[grepl("^[^0-9.-]*$", ElementValue),ElementValue:=NA]
+AUX <- AUX[!(grepl("^[^0-9.-]*$", ElementValue))]
+
 # Convert to numeric
 # AUX[is.na(as.numeric(ElementValue))] ?
 AUX[,ElementValue:=as.double(ElementValue)] 
-AUX[,DL:=as.double(DL)] 
 
-
+# Check that there are not elements with the same SampleID
+AUX[,n:=.N,by=.(SampleID,ElementID,isDrillhole)]
 
 
 # ******************************************************************************
 # Aggregate data. Remove SetID. Average parameters 
-AUX <- AUX[,.(ElementValue=mean(ElementValue)),by=.(SampleID,ElementID,isDrillhole,BDL)] 
-
-# Check that there are not elements with the same SampleID
-AUX[,.(n=.N),by=.(SampleID,ElementID,isDrillhole,BDL)][n>1]
-
-
-LGL <- AUX |> unique()
+AUX[n>1,ElementValue:=mean(ElementValue),by=.(SampleID,ElementID)] 
 
 
 
-# Fix SampleID codes. 
-# Remove SAS prefix (there are no samples with SAS-)
-# Remove Depth suffix
-# remove trailing spaces
 
-# LGL[,SampleID:=gsub("\\bSAS[ -]", "", SampleID)]
-LGL[,SampleID:=gsub(" \\d+\\.\\d+M", "", SampleID)]
-LGL[,SampleID:=gsub(" \\d+\\.\\d+FT", "", SampleID)]
-LGL[,SampleID:=gsub(" *[[:space:]]+.*", "", SampleID)]
-LGL[,SampleID:=gsub("[-.]", "", SampleID)]
-
-LGL[,SampleID:=toupper(SampleID)]
-
-
-
-# SAS[- ]?: This regular expression matches “SAS” followed by either a dash (-) or a space (indicated by the [- ]?).
-# \\d+\\.\\d+M: This pattern matches a numeric suffix (one or more digits \\d+, a decimal \\., more digits \\d+, followed by “M”).
-# gsub(): Replaces the matched patterns with an empty string.
-# rimws(): Removes any extra whitespace that might be left after the replacement.
+LGL <- AUX[,.(SampleID,ElementID,IDH=isDrillhole,BDL,ElementValue)] |> unique()
 
 
 
