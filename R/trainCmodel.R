@@ -1,7 +1,7 @@
 rm(list=ls())
 source("R/setup.R")
 LGL <- fread("data/LGL.csv")
-YoID_target <- LGL[!(ElementID %in% c("Cu","Be"))]$ElementID |> unique()
+YoID_target <- LGL[!(ElementID %in% c("Cu","Be","Er","Pr"))]$ElementID |> unique()
 YoID_target <- sample(YoID_target,size=length(YoID_target))
 PATH <- "model/C"
 nADLmin <- 10 # Numero de veces por encima del limite de deteccion
@@ -16,7 +16,7 @@ nADLmin <- 10 # Numero de veces por encima del limite de deteccion
 .preProcess <-c("scale","center")
 
 SET <- "Rn"# An,Rn
-.method <- "ranger" #c("svmRadialSigma","ranger","avNNet") #"glmnet"
+.method <- "svmRadialSigma" #c("svmRadialSigma","ranger","avNNet") #"glmnet"
 
 Xo <- fread(paste0("data/Xo.",SET,".csv"))
 Yo <- fread(paste0("data/Yo.",SET,".csv"))
