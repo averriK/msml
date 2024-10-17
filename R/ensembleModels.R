@@ -8,44 +8,38 @@ DIR <- gsub("\\.Rds", "", DIR)
 # Split by "_". First element is SET, second is ML, third is YoID. Build a data.table
 if(length(DIR)>1){
   ModelIndex <- tstrsplit(DIR,"_",keep=1:3) |> as.data.table()
-  setnames(ModelIndex,old=c("V1","V2","V3"),new=c("SET","ML","YoID"))
-  ModelIndex[,file:=paste0(SET,"_",ML,"_",YoID,".Rds")]
+  setnames(ModelIndex,old=c("V1","V2","V3"),new=c("S","M","ID"))
+  ModelIndex[,file:=paste0(S,"_",M,"_",ID,".Rds")]
 }
 
-
-for(SET in unique(ModelIndex$SET)){
+# SET <- "Rn"
+DATA <- data.table()
+for(SET in unique(ModelIndex$S)){
   Xi <- fread(paste0("data/Xi.",SET,".csv"))
-  for(YoID in unique(ModelIndex$YoID)){
+  # YoID <- "Ag"
+  for(YoID in unique(ModelIndex$ID)){
     # Build a list of files with ModelIndex[oID == YoID_target),file]
-    file_list <- ModelIndex[YoID == get("YoID") & SET == get("SET")]$file
+    index <-  ModelIndex[ID == YoID & S == SET ]
+    FILE_LIST <-index$file
     # Build model list for stacking
-    model_list <- lapply(file_list, function(file) {
-      O <- readRDS(file.path(PATH,file))
-      O$model
-    })
-    names_list <- ModelIndex[YoID == get("YoID"),.(ID=paste0(ML,SET))]$ID
-    names(model_list) <- names_list
     
-    # Build model performance table
-    table_list <- lapply(file_list, function(file) {
-      O <- readRDS(file.path(PATH,file))
+    MODEL_LIST <- list()
+    FILE <- FILE_LIST[1]
+    for(FILE in FILE_LIST){
+      O <- readRDS(file.path(PATH,FILE))
       P <- predict(O$model,newdata=Xi,type="prob")
-      Xi[,.(SampleID,ElementID=YoID,ModelID=file,"P[C>10*DL]"= P$Y)]
-    })
-    browser()
+      M <- O$model$method
+      DATA <- rbind(DATA,Xi[,.(SampleID,ElementID=YoID,DataID=SET,ModelID=M,FileID=FILE,"P[C>10*DL]"= P$Y,ROC=O$ROC)])
+      MODEL_LIST[[M]] <- O$model
+      
+    }
     
-    # for(FILE in FILE_LIST){
-    #   MDL <- readRDS(file = FILE)
-    #   model <- MDL$model
-    #   browser()
-    #   P <- predict(model,newdata=Xi,type="prob") #|> as.data.table()
-    #   P[]
-    #   AUX <- Xi[,.(SampleID,ElementID=YoID,ModelID=ML,DataID=SET,"P[C>10*DL]"= P$Y)]
-    #   
-    #   I <- as.numeric(row.names(model$bestTune))
-    #   ROC <- model$results$ROC[I]
-    # }
+    
+    
+    
+    
   }
+  
 }
 
 
