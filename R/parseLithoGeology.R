@@ -122,7 +122,7 @@ AUX[,DL:=0]
 AUX[BDL==TRUE,DL:=max(ElementValue),by=.(ElementID)]
 AUX[,DL:=max(DL),by=.(ElementID)]
 AUX[BDL==FALSE & DL==0,DL:=min(ElementValue),by=.(ElementID)]
-
+AUX[DL==0,DL:=quantile(ElementValue,prob=0.10),by=.(ElementID)]
 
 AUX[,nADL:=floor(ElementValue/DL),by=.(ElementID)]
 

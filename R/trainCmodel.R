@@ -1,8 +1,9 @@
 rm(list=ls())
 source("R/setup.R")
 LGL <- fread("data/LGL.csv")
-YoID_target <- LGL[!(ElementID %in% c("Cu","Be","Er","Pr"))]$ElementID |> unique()
-YoID_target <- sample(YoID_target,size=length(YoID_target))
+# YoID_target <- LGL[!(ElementID %in% c("Cu","Be","Er","Pr"))]$ElementID |> unique()
+YoID_target <- c("Cu","Be","Er","Pr")
+# YoID_target <- sample(YoID_target,size=length(YoID_target))
 PATH <- "model/C"
 nADLmin <- 10 # Numero de veces por encima del limite de deteccion
 .tuneLength <- 10 
