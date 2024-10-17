@@ -1,0 +1,106 @@
+rm(list=ls())
+source("R/setup.R")
+# list content of models/regression/*.Rds folder
+PATH <- "model/C"
+DIR <- list.files(file.path(PATH),pattern="*.Rds")
+# Remove extension .Rds
+DIR <- gsub("\\.Rds", "", DIR)
+# Split by "_". First element is SET, second is ML, third is YoID. Build a data.table
+if(length(DIR)>1){
+  ModelIndex <- tstrsplit(DIR,"_",keep=1:3) |> as.data.table()
+  setnames(ModelIndex,old=c("V1","V2","V3"),new=c("SET","ML","YoID"))
+  ModelIndex[,file:=paste0(SET,"_",ML,"_",YoID,".Rds")]
+}
+
+
+for(SET in unique(ModelIndex$SET)){
+  Xi <- fread(paste0("data/Xi.",SET,".csv"))
+  for(YoID in unique(ModelIndex$YoID)){
+    # Build a list of files with ModelIndex[oID == YoID_target),file]
+    file_list <- ModelIndex[YoID == get("YoID") & SET == get("SET")]$file
+    # Build model list for stacking
+    model_list <- lapply(file_list, function(file) {
+      O <- readRDS(file.path(PATH,file))
+      O$model
+    })
+    names_list <- ModelIndex[YoID == get("YoID"),.(ID=paste0(ML,SET))]$ID
+    names(model_list) <- names_list
+    
+    # Build model performance table
+    table_list <- lapply(file_list, function(file) {
+      O <- readRDS(file.path(PATH,file))
+      P <- predict(O$model,newdata=Xi,type="prob")
+      Xi[,.(SampleID,ElementID=YoID,ModelID=file,"P[C>10*DL]"= P$Y)]
+    })
+    browser()
+    
+    # for(FILE in FILE_LIST){
+    #   MDL <- readRDS(file = FILE)
+    #   model <- MDL$model
+    #   browser()
+    #   P <- predict(model,newdata=Xi,type="prob") #|> as.data.table()
+    #   P[]
+    #   AUX <- Xi[,.(SampleID,ElementID=YoID,ModelID=ML,DataID=SET,"P[C>10*DL]"= P$Y)]
+    #   
+    #   I <- as.numeric(row.names(model$bestTune))
+    #   ROC <- model$results$ROC[I]
+    # }
+  }
+}
+
+
+
+
+# 
+# 
+# for(SET in unique(ModelIndex$SET)){
+#   Xi <- fread(paste0("data/Xi.",SET,".csv"))
+#   for(YoID in unique(ModelIndex$YoID)){
+#     model_list <- list()
+#     
+#     YoID_target <-YoID
+#     SET_target <- SET
+#     ML_target <- ModelIndex[YoID == YoID_target & SET== SET_target]$ML |> unique()
+#     
+#     
+#     for(ML in ML_target){
+#       MID <- paste0(SET,"_",ML,"_",YoID,".Rds")
+#       FILE <- file.path(PATH,MID)
+#      
+#       
+#       if(!file.exists(FILE)) next
+#       MDL <- readRDS(file = FILE)
+#       model <- MDL$model
+#       browser()
+#       P <- predict(model,newdata=Xi,type="prob") #|> as.data.table()
+#       P[]
+#       AUX <- Xi[,.(SampleID,ElementID=YoID,ModelID=ML,DataID=SET,"P[C>10*DL]"= P$Y)]
+#       
+#       I <- as.numeric(row.names(model$bestTune))
+#       ROC <- model$results$ROC[I]
+#     }
+#     
+#     # stackModel <- caretStack(
+#     #   all.models=modelList,
+#     #   method="glm",
+#     #   trControl = trainControl(
+#     #     summaryFunction = twoClassSummary,
+#     #     classProbs = TRUE, # IMPORTANT!
+#     #     verboseIter = TRUE,
+#     #     allowParallel = TRUE),
+#     #   metric="ROC"
+#     # )
+#     
+#   }
+# }
+
+# 
+# 
+# SET <- "Rn"
+# YoID <- "Au"
+# ML <- "ranger"
+# # Load model
+# FILE <- file.path(PATH,paste0(SET,"_",ML,"_",YoID,".Rds"))
+# MDL <- readRDS(file = FILE)
+# 
+# predict()
