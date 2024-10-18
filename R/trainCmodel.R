@@ -17,7 +17,7 @@ nADLmin <- 10 # Numero de veces por encima del limite de deteccion
 .preProcess <-c("scale","center")
 
 SET <- "Rn"# An,Rn
-.method <- "nb" #c("svmRadialSigma","ranger","gbm") #"glmnet"
+.method <- "nb" #c("svmRadialSigma","ranger","gbm","nb") #"glmnet"
 
 Xo <- fread(paste0("data/Xo.",SET,".csv"))
 Yo <- fread(paste0("data/Yo.",SET,".csv"))
