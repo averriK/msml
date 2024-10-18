@@ -41,7 +41,7 @@ for(SET in unique(ModelIndex$S)){
   }
   
 }
-
+fwrite(DATA,"data/AUX.csv")
 
 
 
