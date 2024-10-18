@@ -1,3 +1,4 @@
+rm(list=ls())
 source("R/setup.R")
 # Dataset A
 # Removed from Source duplicated Ni. We kept Ni values which most values above the DL 
@@ -124,7 +125,7 @@ AUX[,DL:=max(DL),by=.(ElementID)]
 AUX[BDL==FALSE & DL==0,DL:=min(ElementValue),by=.(ElementID)]
 AUX[DL==0,DL:=quantile(ElementValue,prob=0.10),by=.(ElementID)]
 
-AUX[,nADL:=floor(ElementValue/DL),by=.(ElementID)]
+AUX[,nADL:=ceiling(ElementValue/DL),by=.(ElementID)]
 
 
 # ******************************************************************************
