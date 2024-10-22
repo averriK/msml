@@ -17,7 +17,7 @@ nADLmin <- 10 # Numero de veces por encima del limite de deteccion
 .preProcess <- c("scale", "center")
 
 SET <- "Rn" # Options: An, Rn
-.method <- "glmnet" # Ensure this method supports multiclass classification
+.method <- "glmnet" # svmRadialSigma, ranger, gbm, gaussprRadial, C5.0
 PATH <- file.path("model", .method)
 if (!dir.exists(PATH)) dir.create(PATH)
 Xo <- fread(paste0("data/Xo.", SET, ".csv"))
