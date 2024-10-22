@@ -56,7 +56,7 @@ rsconnect/
 data/
 data-raw/
 spectra/
-
+model/
 
 # Local Netlify folder
 .netlify
