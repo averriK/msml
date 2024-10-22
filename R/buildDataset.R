@@ -35,17 +35,59 @@ Xo <- removeNZV(Xo)
 # Build unsupervised Dataset
 COLS <- names(Xo)
 Xi <- DATA[!(SampleID %in% IDX),..COLS]
-Yo <- LGL[SampleID %in% IDX,.(ElementID,SampleID,ElementValue)]
-
-# Define Y based on ElementValue
-Yo[, Class := cut(ElementValue,
-              breaks = c(-Inf, 1, 10, 100, 1000, Inf),
-              labels = 0:4,
-              right = TRUE)%>% factor(levels = 0:4),by=.(ElementID,SampleID)]
+Yo <- LGL[SampleID %in% IDX,.(ElementID,SampleID,ElementValue,IDH=as.logical(IDH))]
 
 
+# Function to determine the break point (median)
+get_break <- function(values) {
+  median(values, na.rm = TRUE)
+}
 
+# Create reference table with break point, considering both ElementID and IDH
+YoCategory <- Yo[, .(Break = round(get_break(ElementValue), 3)), by = .(ElementID, IDH)]
 
+# Function to classify based on break point
+classify_element <- function(value, Break) {
+  ifelse(value <= Break, "L", "H")
+}
+
+# Apply classification
+Yo[YoCategory, on = .(ElementID, IDH), 
+   Class := sapply(.SD, function(x) classify_element(x, i.Break)), 
+   .SDcols = "ElementValue"]
+
+# Convert Class to factor with levels L and H
+Yo[, Class := factor(Class, levels = c("L", "H"))]
+
+# Calculate class counts
+class_counts <- Yo[, .N, by = .(ElementID, IDH, Class)]
+
+# Update YoCategory with counts
+YoCategory[, c("nL", "nH") := 0]
+YoCategory[class_counts[Class == "L"], on = .(ElementID, IDH), nL := N]
+YoCategory[class_counts[Class == "H"], on = .(ElementID, IDH), nH := N]
+
+# Print class information for each ElementID and IDH combination
+Yo[, {
+  class_counts <- table(Class)
+  cat("ElementID:", unique(ElementID), "\n")
+  cat("IDH:", unique(IDH), "\n")
+  cat("Total samples:", sum(class_counts), "\n")
+  cat("Class counts:\n")
+  print(class_counts)
+  element_category <- YoCategory[ElementID == .BY$ElementID & IDH == .BY$IDH]
+  cat("Class boundary:\n")
+  cat(sprintf("L: x <= %.3f (n = %d)\n", element_category$Break, element_category$nL))
+  cat(sprintf("H: x > %.3f (n = %d)\n", element_category$Break, element_category$nH))
+  cat("\n")
+}, by = .(ElementID, IDH)]
+
+# Print summary of YoCategory
+print(summary(YoCategory))
+print(nrow(YoCategory))
+
+# Verify the unique classes for a specific element (e.g., Lu)
+print(Yo[ElementID=="Lu"]$Class %>% unique())
 
 # Check column integrity
 names(Xo) %in% names(Xi) |> all()
@@ -55,3 +97,7 @@ fwrite(Yo,"data/Yo.Rn.csv")
 
 
 # nolint end
+
+
+
+
