@@ -1,3 +1,5 @@
+# nolint start
+
 rm(list=ls())
 source("R/setup.R")
 # Dataset A
@@ -117,15 +119,12 @@ AUX <- AUX[!(grepl("^[^0-9.-]*$", ElementValue))]
 AUX[,ElementValue:=as.double(ElementValue)] 
 
 #Find Detection Limits
-AUX[,DL:=0]
+kBDL=0
+AUX[BDL==TRUE,ElementValue:=kBDL*ElementValue,by=.(ElementID,SampleID,SetID)]
+#AUX[,DL:=max(DL),by=.(ElementID)]
+#AUX[BDL==FALSE & DL==0,DL:=ElementValue,by=.(ElementID,SampleID)]
 
-# Define the detection limits as the maximum value of the element in the sample
-AUX[BDL==TRUE,DL:=max(ElementValue),by=.(ElementID)]
-AUX[,DL:=max(DL),by=.(ElementID)]
-AUX[BDL==FALSE & DL==0,DL:=min(ElementValue),by=.(ElementID)]
-AUX[DL==0,DL:=quantile(ElementValue,prob=0.10),by=.(ElementID)]
 
-AUX[,nADL:=ceiling(ElementValue/DL),by=.(ElementID)]
 
 
 # ******************************************************************************
@@ -137,7 +136,7 @@ AUX[,ElementValue:=mean(ElementValue),by=.(SampleID,ElementID)]
 
 
 
-LGL <- AUX[,.(SampleID,ElementID,IDH=isDrillhole,nADL,ElementValue)] |> unique()
+LGL <- AUX[,.(SampleID,ElementID,isDrillhole,ElementValue)] |> unique()
 
 
 

@@ -38,20 +38,9 @@ Xi <- DATA[!(SampleID %in% IDX),..COLS]
 Yo <- LGL[SampleID %in% IDX,.(ElementID,SampleID,ElementValue)]
 
 
-# Function to remove outliers using IQR method
-remove_outliers <- function(x) {
-  q1 <- quantile(x, 0.25, na.rm = TRUE)
-  q3 <- quantile(x, 0.75, na.rm = TRUE)
-  iqr <- q3 - q1
-  lower_bound <- q1 - 1.5 * iqr
-  upper_bound <- q3 + 1.5 * iqr
-  x[x >= lower_bound & x <= upper_bound]
-}
-
-# Function to determine the break point for 2/3 L and 1/3 H split, after removing outliers
+# Function to determine the break point for 2/3 L and 1/3 H split
 get_break <- function(values) {
-  values_no_outliers <- remove_outliers(values)
-  sorted_values <- sort(values_no_outliers)
+  sorted_values <- sort(values)
   n <- length(sorted_values)
   break_index <- ceiling(2 * n / 3)  # Index for 2/3 of the data
   sorted_values[break_index]
@@ -65,7 +54,7 @@ classify_element <- function(value, Break) {
   ifelse(value <= Break, "L", "H")
 }
 
-# Apply classification (including outliers in the classification)
+# Apply classification
 Yo[YoCategory, on = "ElementID", 
    Class := sapply(.SD, function(x) classify_element(x, i.Break)), 
    .SDcols = "ElementValue"]
