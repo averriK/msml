@@ -35,7 +35,7 @@ Xo <- removeNZV(Xo)
 # Build unsupervised Dataset
 COLS <- names(Xo)
 Xi <- DATA[!(SampleID %in% IDX),..COLS]
-Yo <- LGL[SampleID %in% IDX,.(ElementID,SampleID,ElementValue,IDH=as.logical(IDH))]
+Yo <- LGL[SampleID %in% IDX,.(ElementID,SampleID,ElementValue)]
 
 
 # Function to determine the break point (median)
@@ -43,8 +43,8 @@ get_break <- function(values) {
   median(values, na.rm = TRUE)
 }
 
-# Create reference table with break point, considering both ElementID and IDH
-YoCategory <- Yo[, .(Break = round(get_break(ElementValue), 3)), by = .(ElementID, IDH)]
+# Create reference table with break point, considering only ElementID
+YoCategory <- Yo[, .(Break = round(get_break(ElementValue), 3)), by = ElementID]
 
 # Function to classify based on break point
 classify_element <- function(value, Break) {
@@ -52,7 +52,7 @@ classify_element <- function(value, Break) {
 }
 
 # Apply classification
-Yo[YoCategory, on = .(ElementID, IDH), 
+Yo[YoCategory, on = "ElementID", 
    Class := sapply(.SD, function(x) classify_element(x, i.Break)), 
    .SDcols = "ElementValue"]
 
@@ -60,27 +60,26 @@ Yo[YoCategory, on = .(ElementID, IDH),
 Yo[, Class := factor(Class, levels = c("L", "H"))]
 
 # Calculate class counts
-class_counts <- Yo[, .N, by = .(ElementID, IDH, Class)]
+class_counts <- Yo[, .N, by = .(ElementID, Class)]
 
 # Update YoCategory with counts
 YoCategory[, c("nL", "nH") := 0]
-YoCategory[class_counts[Class == "L"], on = .(ElementID, IDH), nL := N]
-YoCategory[class_counts[Class == "H"], on = .(ElementID, IDH), nH := N]
+YoCategory[class_counts[Class == "L"], on = "ElementID", nL := N]
+YoCategory[class_counts[Class == "H"], on = "ElementID", nH := N]
 
-# Print class information for each ElementID and IDH combination
+# Print class information for each ElementID
 Yo[, {
   class_counts <- table(Class)
   cat("ElementID:", unique(ElementID), "\n")
-  cat("IDH:", unique(IDH), "\n")
   cat("Total samples:", sum(class_counts), "\n")
   cat("Class counts:\n")
   print(class_counts)
-  element_category <- YoCategory[ElementID == .BY$ElementID & IDH == .BY$IDH]
+  element_category <- YoCategory[ElementID == .BY$ElementID]
   cat("Class boundary:\n")
   cat(sprintf("L: x <= %.3f (n = %d)\n", element_category$Break, element_category$nL))
   cat(sprintf("H: x > %.3f (n = %d)\n", element_category$Break, element_category$nH))
   cat("\n")
-}, by = .(ElementID, IDH)]
+}, by = ElementID]
 
 # Print summary of YoCategory
 print(summary(YoCategory))
