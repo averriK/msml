@@ -1,6 +1,9 @@
 # nolint start
 
-rm(list=ls())
+# Remove all objects from the current environment
+rm(list = ls())
+
+# Source the setup script
 source("R/setup.R")
 # Dataset A
 # Removed from Source duplicated Ni. We kept Ni values which most values above the DL 
@@ -147,4 +150,5 @@ LGL <- AUX[,.(SampleID,ElementID,isDrillhole,ElementValue,DL)] |> unique()
 fwrite(LGL, "data/LGL.csv")
 
 
+# nolint end
 
