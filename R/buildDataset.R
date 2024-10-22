@@ -38,9 +38,23 @@ Xi <- DATA[!(SampleID %in% IDX),..COLS]
 Yo <- LGL[SampleID %in% IDX,.(ElementID,SampleID,ElementValue)]
 
 
-# Function to determine the break point (median)
+# Function to remove outliers using IQR method
+remove_outliers <- function(x) {
+  q1 <- quantile(x, 0.25, na.rm = TRUE)
+  q3 <- quantile(x, 0.75, na.rm = TRUE)
+  iqr <- q3 - q1
+  lower_bound <- q1 - 1.5 * iqr
+  upper_bound <- q3 + 1.5 * iqr
+  x[x >= lower_bound & x <= upper_bound]
+}
+
+# Function to determine the break point for 2/3 L and 1/3 H split, after removing outliers
 get_break <- function(values) {
-  median(values, na.rm = TRUE)
+  values_no_outliers <- remove_outliers(values)
+  sorted_values <- sort(values_no_outliers)
+  n <- length(sorted_values)
+  break_index <- ceiling(2 * n / 3)  # Index for 2/3 of the data
+  sorted_values[break_index]
 }
 
 # Create reference table with break point, considering only ElementID
@@ -51,7 +65,7 @@ classify_element <- function(value, Break) {
   ifelse(value <= Break, "L", "H")
 }
 
-# Apply classification
+# Apply classification (including outliers in the classification)
 Yo[YoCategory, on = "ElementID", 
    Class := sapply(.SD, function(x) classify_element(x, i.Break)), 
    .SDcols = "ElementValue"]
@@ -70,14 +84,19 @@ YoCategory[class_counts[Class == "H"], on = "ElementID", nH := N]
 # Print class information for each ElementID
 Yo[, {
   class_counts <- table(Class)
+  total_samples <- sum(class_counts)
   cat("ElementID:", unique(ElementID), "\n")
-  cat("Total samples:", sum(class_counts), "\n")
+  cat("Total samples:", total_samples, "\n")
   cat("Class counts:\n")
   print(class_counts)
   element_category <- YoCategory[ElementID == .BY$ElementID]
   cat("Class boundary:\n")
-  cat(sprintf("L: x <= %.3f (n = %d)\n", element_category$Break, element_category$nL))
-  cat(sprintf("H: x > %.3f (n = %d)\n", element_category$Break, element_category$nH))
+  cat(sprintf("L: x <= %.3f (n = %d, %.2f%%)\n", 
+              element_category$Break, element_category$nL, 
+              100 * element_category$nL / total_samples))
+  cat(sprintf("H: x > %.3f (n = %d, %.2f%%)\n", 
+              element_category$Break, element_category$nH,
+              100 * element_category$nH / total_samples))
   cat("\n")
 }, by = ElementID]
 
