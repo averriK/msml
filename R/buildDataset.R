@@ -38,20 +38,47 @@ Xi <- DATA[!(SampleID %in% IDX),..COLS]
 Yo <- LGL[SampleID %in% IDX,.(ElementID,SampleID,ElementValue)]
 
 
-# Function to determine the break point for 2/3 L and 1/3 H split
-get_break <- function(values) {
-  sorted_values <- sort(values)
-  n <- length(sorted_values)
-  break_index <- ceiling(2 * n / 3)  # Index for 2/3 of the data
-  sorted_values[break_index]
+# Function to remove outliers using IQR method
+remove_outliers <- function(x) {
+  q1 <- quantile(x, 0.25, na.rm = TRUE)
+  q3 <- quantile(x, 0.75, na.rm = TRUE)
+  iqr <- q3 - q1
+  lower_bound <- q1 - 1.5 * iqr
+  upper_bound <- q3 + 1.5 * iqr
+  x[x >= lower_bound & x <= upper_bound]
 }
 
-# Create reference table with break point, considering only ElementID
-YoCategory <- Yo[, .(Break = round(get_break(ElementValue), 3)), by = ElementID]
+# Function to determine the break point for a ~50/50 split
+get_break <- function(values) {
+  # Remove zeros
+  values <- values[values > 0]
+  
+  # Sort values
+  sorted_values <- sort(values)
+  
+  # Find the index that splits the data into two equal parts
+  split_index <- ceiling(length(sorted_values) / 2)
+  
+  # Use the value at this index as the break point
+  break_value <- sorted_values[split_index]
+  
+  return(break_value)
+}
+
+# Merge Yo with LGL to get the corresponding DL for each sample
+Yo <- merge(Yo, LGL[, .(ElementID, SampleID, DL)], by = c("ElementID", "SampleID"))
+
+# Create reference table with break point, considering ElementID
+YoCategory <- Yo[, {
+  cat("Processing ElementID:", unique(ElementID), "\n")
+  break_value <- get_break(ElementValue)
+  cat("Break value:", break_value, "\n")
+  .(Break = round(break_value, 3))
+}, by = ElementID]
 
 # Function to classify based on break point
 classify_element <- function(value, Break) {
-  ifelse(value <= Break, "L", "H")
+  ifelse(value < Break, "L", "H")  # Changed <= to < to handle ties at the break point
 }
 
 # Apply classification
@@ -80,10 +107,10 @@ Yo[, {
   print(class_counts)
   element_category <- YoCategory[ElementID == .BY$ElementID]
   cat("Class boundary:\n")
-  cat(sprintf("L: x <= %.3f (n = %d, %.2f%%)\n", 
+  cat(sprintf("L: x < %.3f (n = %d, %.2f%%)\n", 
               element_category$Break, element_category$nL, 
               100 * element_category$nL / total_samples))
-  cat(sprintf("H: x > %.3f (n = %d, %.2f%%)\n", 
+  cat(sprintf("H: x >= %.3f (n = %d, %.2f%%)\n", 
               element_category$Break, element_category$nH,
               100 * element_category$nH / total_samples))
   cat("\n")

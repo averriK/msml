@@ -119,6 +119,9 @@ AUX <- AUX[!(grepl("^[^0-9.-]*$", ElementValue))]
 AUX[,ElementValue:=as.double(ElementValue)] 
 
 #Find Detection Limits
+AUX[,DL:=0]
+AUX[BDL==TRUE,DL:=ElementValue,by=.(ElementID,SampleID,SetID)]
+
 kBDL=0
 AUX[BDL==TRUE,ElementValue:=kBDL*ElementValue,by=.(ElementID,SampleID,SetID)]
 #AUX[,DL:=max(DL),by=.(ElementID)]
@@ -136,7 +139,7 @@ AUX[,ElementValue:=mean(ElementValue),by=.(SampleID,ElementID)]
 
 
 
-LGL <- AUX[,.(SampleID,ElementID,isDrillhole,ElementValue)] |> unique()
+LGL <- AUX[,.(SampleID,ElementID,isDrillhole,ElementValue,DL)] |> unique()
 
 
 

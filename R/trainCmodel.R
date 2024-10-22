@@ -3,9 +3,8 @@
 rm(list=ls()) # nolint
 source("R/setup.R")
 LGL <- fread("data/LGL.csv")
-YoID_target <- LGL[!(ElementID %in% c("Be"))]$ElementID |> unique()
+YoID_target <- LGL$ElementID |> unique()
 
-nADLmin <- 10 # Numero de veces por encima del limite de deteccion
 .tuneLength <- 10 
 .preProcess <- NULL
 
