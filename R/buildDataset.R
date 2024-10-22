@@ -1,12 +1,12 @@
-rm(list=ls())
+rm(list=ls()) # nolint # nolint
 source("R/setup.R")
 source("R/utils.R")
 
-# Load Lithology LONG 
-LGL <- fread("data/LGL.csv") 
+# Load Lithology LONG  # nolint
+LGL <- fread("data/LGL.csv")  # nolint
 # Load Spectral data LONG
-SML <- fread("data/SML.csv") 
-SXL <- SML[,get_peaks(.SD,x=.SD$Rm),by=.(SourceID,SampleID)]
+SML <- fread("data/SML.csv")  # nolint
+SXL <- SML[complete.cases(),get_peaks(.SD,x=.SD$Rm),by=.(SourceID,SampleID)]
 fwrite(SXL,"data/SXL.csv")
 
 # Option A. (R) Full spectra
@@ -21,25 +21,8 @@ LGL <- unique(LGL)
 # If dcast() fails, means that not all spectra has spectral ordinates in all WLo. In that case, resample DATA to WLo ranges
 # This approach requires the full range of wavelengths with values. Therefore infrared spectra with values below 1400 cannot be mixed with PIMA data with values only for WLlarger than 1400
 
-
-# *********************************************************************************
-# Build Standard Dataset. Continuous Wavelength range (CWLR)
-# ASD spectra has WL 300,301,...1000,1001,1002,1003...
-# DSP spectra has WL 1300,1302,1304,....
-# FOS spectra has WL 1300,1302,1304,....
-# The following code resamples all SourceID groups to the same WL range
-
-# Get WL range for all spectra. 604 spectral ordinates
-WLo <- SML$WL |> unique()
-
-# Remove odd values from WLo using is.odd()
-WLo <- WLo[!is.odd(WLo)]
-# Remove NA values if any, otherwise approx() fails
-SML <- na.omit(SML)
-# Resample all SourceID groups to the same WL range
-AUX <- SML[,.(WL=WLo,Rn=approx(x=.SD$WL,y=.SD$Rn,xout=WLo,yleft=0)$y),by=.(SampleID,SourceID)]
 # Reshape DATA to wide format
-DATA <- dcast(AUX,SampleID+SourceID~WL,value.var="Rn") 
+DATA <- dcast(SML,SampleID+SourceID~WL,value.var="Rn") 
 
 # rename cols
 COLS <- setdiff(names(DATA), c("SampleID","SourceID")) |> trimws()

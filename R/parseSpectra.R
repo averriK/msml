@@ -50,28 +50,46 @@ DATA[,SampleID:=toupper(SampleID) |> trimws()]
 DATA$SampleID |> unique() |> length() |> sprintf(fmt="There are %d unique SampleIDs available")
 
 
+# *********************************************************************************
+# Build Standard Dataset. Continuous Wavelength range (CWLR)
+# ASD spectra has WL 300,301,...1000,1001,1002,1003...
+# DSP spectra has WL 1300,1302,1304,....
+# FOS spectra has WL 1300,1302,1304,....
+# The following code resamples all SourceID groups to the same WL range
 
+WLmin <- 1000
+WLmax <- 2450
 # Remove (Aggregate) possible duplicates from different ProjectIDs
-DATA <- DATA[WL>=1000,.(R=mean(R)),by=.(SampleID,SourceID,WL)]
+DATA <- DATA[WL>=WLmin & WL<=WLmax,.(R=mean(R)),by=.(SampleID,SourceID,WL)]
+
+# Get WL range for all spectra. 604 spectral ordinates
+WLo <- DATA$WL |> unique()
+
+# Remove odd values from WLo using is.odd()
+WLo <- WLo[!is.odd(WLo)]
 
 
-# IDX <- unique(DATA$SampleID) |> sample(size=100)
+# Resample all SourceID groups to the same WL range
+DATA <- DATA[,.(WL=WLo,R=approx(x=.SD$WL,y=.SD$R,xout=WLo,yleft=0)$y),by=.(SampleID,SourceID)]
+
+
 
 SML <- DATA[,.(
   WL,R,
-  Rm=get_emd_envelope(x=.SD$WL,y=.SD$R),
+  # Rm=get_emd_envelope(x=.SD$WL,y=.SD$R),
   Rn=get_convex_envelope(x=.SD$WL,y=.SD$R,type="upper")
 ),by=.(SampleID,SourceID)]
 
 SML[,Ue:=R+Rn,by=.(SampleID,SourceID)]
+fwrite(SML, "data/SML.csv")
+rm(DATA)
 
 # Replace NA values in Rm
 setorder(SML, SampleID, SourceID,WL)
-SML[, Rm := nafill(Rm, type = "nocb"), by = .(SampleID,SourceID)]
+
+# SML[, Rm := nafill(Rm, type = "nocb"), by = .(SampleID,SourceID)]
 
 # SML[is.na(Rm),Rm:=0,by=.(SampleID,SourceID)]
-fwrite(SML, "data/SML.csv")
-rm(DATA)
 
 SXL <- SML[,get_peaks(.SD,x=.SD$Rm),by=.(SourceID,SampleID)]
 fwrite(SXL,"data/SXL.csv")
