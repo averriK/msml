@@ -1,71 +1,69 @@
-rm(list=ls())
+# nolint start
+
+rm(list=ls()) # nolint
 source("R/setup.R")
 LGL <- fread("data/LGL.csv")
 YoID_target <- LGL[!(ElementID %in% c("Be"))]$ElementID |> unique()
-# YoID_target <- c("Cu","Er","Pr")#"Be",
-# YoID_target <- sample(YoID_target,size=length(YoID_target))
 
 nADLmin <- 10 # Numero de veces por encima del limite de deteccion
 .tuneLength <- 10 
-.trControl <-  trainControl(
+.trControl <- trainControl(
   method = "cv",
   number = 10,
-  summaryFunction = twoClassSummary,
-  classProbs = TRUE, # IMPORTANT!
+  summaryFunction = multiClassSummary,
   verboseIter = TRUE,
-  allowParallel = TRUE)
-.preProcess <-c("scale","center")
+  allowParallel = TRUE
+)
+.preProcess <- c("scale", "center")
 
-SET <- "Rn"# An,Rn
-.method <- "glmnet" #c("svmRadialSigma","ranger","gbm","nb") 
-PATH <- file.path("model",.method)
-Xo <- fread(paste0("data/Xo.",SET,".csv"))
-Yo <- fread(paste0("data/Yo.",SET,".csv"))
-YoID <- YoID_target[1]
-for(YoID in YoID_target){
-  FILE <- file.path(PATH,paste0(SET,"_",.method,"_",YoID,".Rds"))
-  if(file.exists(FILE)) next
-  DT.Y <- Yo[ElementID==YoID ,.(SampleID,Y=factor(ifelse(nADL>=nADLmin,"Y","N")))]
-  DT.train <- Xo[DT.Y,on=.(SampleID)][,-c("SampleID","SourceID")]
+SET <- "Rn" # Options: An, Rn
+.method <- "glmnet" # Ensure this method supports multiclass classification
+PATH <- file.path("model", .method)
+if (!dir.exists(PATH)) dir.create(PATH)
+Xo <- fread(paste0("data/Xo.", SET, ".csv"))
+Yo <- fread(paste0("data/Yo.", SET, ".csv"))
+
+# *********************************************************************************
+# Start clusters outside the loop
+CORES <- detectCores(logical = TRUE)  # Detect the number of logical cores
+cl <- makePSOCKcluster(CORES)         # Create a parallel cluster
+registerDoParallel(cl)                # Register the parallel backend
+# *********************************************************************************
+
+for (YoID in YoID_target) {
+  FILE <- file.path(PATH, paste0(SET, "_", .method, "_", YoID, ".Rds"))
+  if (file.exists(FILE)) next
+  DT.Y <- Yo[ElementID == YoID, .(SampleID, Y = Class)]
+  DT.train <- Xo[DT.Y, on = .(SampleID)][, -c("SampleID", "SourceID")]
   
-  # *********************************************************************************
-  # Start clusters
-  if (!exists("cl") || is.null(cl)) {
-    CORES <- detectCores(logical = TRUE)  # Detect the number of logical cores
-    cl <- makePSOCKcluster(CORES)         # Create a parallel cluster
-    registerDoParallel(cl)                # Register the parallel backend
-  }
+  # Ensure 'Y' is a factor with levels 0 to 5
+  DT.train$Y <- factor(DT.train$Y, levels = 0:5)
+  
   model <- train(
-    Y~.,
-    data=DT.train,
-    method=.method,
+    Y ~ .,
+    data = DT.train,
+    method = .method,
     trControl = .trControl,
     tuneLength = .tuneLength,
     preProcess = .preProcess,
-    metric="ROC"
+    metric = "Accuracy",
+    family = "multinomial"
   )
   
-  # *********************************************************************************
-  # Stop and release the cluster after use
-  stopCluster(cl)
-  registerDoSEQ()  # Ensure that parallel processing is turned off
-  rm(cl)           # Remove the cluster object from the environment
-  # *********************************************************************************
   Y <- DT.Y$Y
-  Yp <- predict(model,newdata=DT.train) 
+  Yp <- predict(model, newdata = DT.train)
   I <- as.numeric(row.names(model$bestTune))
-  ROC <- model$results$ROC[I]
+  Accuracy <- model$results$Accuracy[I]
   
-  MODEL <- list(model=model,Y=Y,Yp=Yp,ROC=ROC)
-  saveRDS(MODEL, file=FILE)
+  MODEL <- list(model = model, Y = Y, Yp = Yp, Accuracy = Accuracy)
+  saveRDS(MODEL, file = FILE)
 }
 
+# *********************************************************************************
+# Stop and release the cluster after use
+stopCluster(cl)
+registerDoSEQ()  # Ensure that parallel processing is turned off
+rm(cl)           # Remove the cluster object from the environment
+# *********************************************************************************
 
-
-
-
-
-
-
-
-
+# nolint end

@@ -1,8 +1,7 @@
 library(data.table)
-setDTthreads(threads=0)
+setDTthreads(threads=0) # nolint
 library(readxl)
 library(reticulate)
-#use_python("/Users/averri/environments/venv3.11/bin/python", required = TRUE)
 
 library(stringdist)
 library(caret) |> suppressPackageStartupMessages()
