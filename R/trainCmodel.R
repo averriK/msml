@@ -37,7 +37,7 @@ for (YoID in YoID_target) {
   DT.train <- Xo[DT.Y, on = .(SampleID)][, -c("SampleID", "SourceID")]
   
   # Ensure 'Y' is a factor with levels 0 to 5
-  DT.train$Y <- factor(DT.train$Y, levels = 0:5)
+  DT.train$Y <- factor(DT.train$Y)
   
   model <- train(
     Y ~ .,

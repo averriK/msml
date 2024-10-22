@@ -1,4 +1,5 @@
-rm(list=ls()) # nolint # nolint
+# nolint start
+rm(list=ls()) 
 source("R/setup.R")
 source("R/utils.R")
 
@@ -38,12 +39,11 @@ Yo <- LGL[SampleID %in% IDX,.(ElementID,SampleID,ElementValue)]
 
 # Define Y based on ElementValue
 Yo[, Class := cut(ElementValue,
-              breaks = c(-Inf, 1, 10, 100, 1000, 10000, Inf),
-              labels = 0:5,
-              right = TRUE)]
+              breaks = c(-Inf, 1, 10, 100, 1000, Inf),
+              labels = 0:4,
+              right = TRUE)%>% factor(levels = 0:4),by=.(ElementID,SampleID)]
 
-# Convert Y to a factor with levels 0 to 5
-Yo[, Y := factor(Y, levels = 0:5)]
+
 
 
 
@@ -54,3 +54,4 @@ fwrite(Xi,"data/Xi.Rn.csv")
 fwrite(Yo,"data/Yo.Rn.csv")
 
 
+# nolint end

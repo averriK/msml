@@ -1,3 +1,4 @@
+# nolint start
 rm(list=ls())
 # import spectral data -----------------------------------------
 source("R/setup.R")
@@ -91,6 +92,7 @@ setorder(SML, SampleID, SourceID,WL)
 
 # SML[is.na(Rm),Rm:=0,by=.(SampleID,SourceID)]
 
-SXL <- SML[,get_peaks(.SD,x=.SD$Rm),by=.(SourceID,SampleID)]
+SXL <- SML[,get_peaks(.SD,x=.SD$Rn),by=.(SourceID,SampleID)]
 fwrite(SXL,"data/SXL.csv")
 
+# nolint end
