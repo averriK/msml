@@ -1,7 +1,5 @@
 # nolint start
 
-rm(list=ls()) # nolint
-source("R/setup.R")
 LGL <- fread("data/LGL.csv")
 YoID_target <- LGL$ElementID |> unique()
 
@@ -9,7 +7,7 @@ YoID_target <- LGL$ElementID |> unique()
 .preProcess <- NULL
 
 SET <- "Rn" # Options: An, Rn
-.methods <- c("svmRadialSigma", "ranger", "gbm", "gaussprRadial", "C5.0", "glmnet")
+.methods <- c("glmnet","svmRadialSigma", "ranger", "gbm", "gaussprRadial", "C5.0")
 
 Xo <- fread(paste0("data/Xo.", SET, ".csv"))
 Yo <- fread(paste0("data/Yo.", SET, ".csv"))

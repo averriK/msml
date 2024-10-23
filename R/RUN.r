@@ -1,3 +1,5 @@
+rm(list=ls()) # nolint
+source("R/setup.R")
 
 # *********************************************************************************
 # Start clusters outside the loop
