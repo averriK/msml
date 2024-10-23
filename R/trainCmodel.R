@@ -14,13 +14,6 @@ SET <- "Rn" # Options: An, Rn
 Xo <- fread(paste0("data/Xo.", SET, ".csv"))
 Yo <- fread(paste0("data/Yo.", SET, ".csv"))
 
-# *********************************************************************************
-# Start clusters outside the loop
-CORES <- detectCores(logical = TRUE)  # Detect the number of logical cores
-cl <- makePSOCKcluster(CORES)         # Create a parallel cluster
-registerDoParallel(cl)                # Register the parallel backend
-# *********************************************************************************
-
 for (.method in .methods) {
   PATH <- file.path("model", .method)
   if (!dir.exists(PATH)) dir.create(PATH)
@@ -77,12 +70,4 @@ for (.method in .methods) {
     cat("Completed:", .method, "for", YoID, "\n")
   }
 }
-
-# *********************************************************************************
-# Stop and release the cluster after use
-stopCluster(cl)
-registerDoSEQ()  # Ensure that parallel processing is turned off
-rm(cl)           # Remove the cluster object from the environment
-# *********************************************************************************
-
 # nolint end
