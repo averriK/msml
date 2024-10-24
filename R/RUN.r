@@ -1,3 +1,4 @@
+# nolint start
 rm(list=ls()) # nolint
 source("R/setup.R")
 
@@ -16,7 +17,4 @@ registerDoSEQ()  # Ensure that parallel processing is turned off
 rm(cl)           # Remove the cluster object from the environment
 # *********************************************************************************
 
-
-
-
-
+# nolint end

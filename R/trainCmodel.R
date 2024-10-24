@@ -7,7 +7,7 @@ YoID_target <- LGL$ElementID |> unique()
 .preProcess <- NULL
 
 SET <- "Rn" # Options: An, Rn
-.methods <- c("glmnet","svmRadialSigma", "ranger", "gbm", "gaussprRadial", "C5.0")
+.methods <- c("ranger","gaussprRadial","svmRadialSigma","C5.0", "glmnet", "gbm")
 
 Xo <- fread(paste0("data/Xo.", SET, ".csv"))
 Yo <- fread(paste0("data/Yo.", SET, ".csv"))
